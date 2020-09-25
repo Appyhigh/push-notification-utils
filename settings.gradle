@@ -1,0 +1,3 @@
+include ':pushNotifications'
+include ':app'
+rootProject.name = "Appyhigh Utils - Push Notifications"
