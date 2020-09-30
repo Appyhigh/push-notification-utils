@@ -1,5 +1,4 @@
 package com.appyhigh.pushNotifications
-
 import android.app.*
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -254,6 +253,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             contentViewRating!!.setImageViewResource(R.id.star3, R.drawable.pt_star_outline)
             contentViewRating!!.setImageViewResource(R.id.star4, R.drawable.pt_star_outline)
             contentViewRating!!.setImageViewResource(R.id.star5, R.drawable.pt_star_outline)
+
 
 //            setCustomContentViewBigImage(contentViewRating, image);
             bitmapImage = getBitmapfromUrl(image)
@@ -735,6 +735,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+
     private fun setCustomContentViewMessageColour(contentView: RemoteViews, message_clr: String?) {
         if (message_clr != null && !message_clr.isEmpty()) {
             contentView.setTextColor(
@@ -744,6 +745,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             )
         }
     }
+
 
     private fun setCustomContentViewTitleColour(contentView: RemoteViews, title_clr: String?) {
         if (title_clr != null && !title_clr.isEmpty()) {
@@ -792,6 +794,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
         }
     }
+
 
     private fun setCustomContentViewTitle(contentView: RemoteViews, title: String?) {
         if (title != null && !title.isEmpty()) {

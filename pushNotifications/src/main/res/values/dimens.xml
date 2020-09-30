@@ -18,6 +18,7 @@
     <dimen name="metadata_font_size">15dp</dimen>
     <dimen name="bezel_font_size">12dp</dimen>
 
+
     <dimen name="metadata_small_icon_x">16dp</dimen>
     <dimen name="metadata_small_icon_y">16dp</dimen>
     <dimen name="metadata_margin_x">4dp</dimen>
