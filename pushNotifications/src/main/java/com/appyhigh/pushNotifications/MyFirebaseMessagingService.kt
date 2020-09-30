@@ -17,11 +17,12 @@ import android.view.View
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import com.appyhigh.pushNotifications.Constants.FCM_ICON
+import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
 import com.clevertap.android.sdk.CleverTapAPI
-import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.play.core.review.ReviewInfo
-import com.google.android.play.core.review.ReviewManager
 import com.google.android.play.core.review.ReviewManagerFactory
+import com.google.android.play.core.tasks.Task
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import java.net.HttpURLConnection
@@ -31,29 +32,22 @@ import java.util.*
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     var bitmap: Bitmap? = null
-    private var pt_id: String? = null
-
-    //    private TemplateType templateType;
-    private var pt_title: String? = null
-    private var pt_msg: String? = null
-    private var pt_msg_summary: String? = null
-    private var pt_small_icon = 0;
-    private var pt_large_icon: String? = null
-    private var pt_big_img: String? = null
-    private var pt_title_clr: String? = null
-    private var pt_msg_clr: String? = null
+    private var title: String? = null
+    private var message: String? = null
+    private var messageBody: String? = null
+    private var large_icon: String? = null
+    private var image: String? = null
+    private var title_clr: String? = null
+    private var message_clr: String? = null
     private var pt_bg: String? = null
     private var contentViewSmall: RemoteViews? = null
     private var contentViewRating: RemoteViews? = null
     private var contentViewBig: RemoteViews? = null
-    private val smallIcon = 0
     private var pt_dot = 0
-    private var pt_meta_clr: String? = null
-    private var pt_small_icon_clr: String? = null
-    private var pt_dot_sep: Bitmap? = null
-    private var pt_subtitle: String? = null
-    private val pt_small_view: String? = null
-    private var mainActivity: String? = null
+    private var meta_clr: String? = null
+    private var small_icon_clr: String? = null
+    private var dot_sep: Bitmap? = null
+    private val small_view: String? = null
 
 
     override fun onMessageSent(s: String) {
@@ -101,11 +95,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     extras.putString(key, value)
                 }
                 val notificationType = extras.getString("notificationType")
+                FCM_ICON = extras.getInt("small_icon",FCM_ICON)
+                FCM_TARGET_ACTIVITY = Class.forName(extras.getString("target_activity",null)) as Class<out Activity?>?
                 val info = CleverTapAPI.getNotificationInfo(extras)
                 if (info.fromCleverTap) {
                     if (extras.getString("nm") != "" || extras.getString("nm") != null
                     ) {
-                        val message = extras.getString("pt_msg")
+                        val message = extras.getString("message")
                         if (message != null) {
                             if (message !== "") {
                                 when (notificationType) {
@@ -116,6 +112,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                                     "Z" -> {
                                         setUp(this, extras)
                                         renderZeroBezelNotification(this, extras)
+                                    }
+                                    "O" -> {
+                                        setUp(this, extras)
+                                        renderOneBezelNotification(this, extras)
                                     }
                                     else -> {
                                         sendNotification(extras)
@@ -140,7 +140,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                             setUp(this, extras)
                             renderZeroBezelNotification(this, extras)
                         }
+                        "O" -> {
+                            setUp(this, extras)
+                            renderOneBezelNotification(this, extras)
+                        }
                         else -> {
+                            Log.d(TAG, "onMessageReceived: in else part")
                             sendNotification(extras)
                         }
                     }
@@ -154,24 +159,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun sendNotification(extras: Bundle) {
         try {
-
-            var messageBody = extras.getString("pt_msg")
-            var image = getBitmapfromUrl(extras.getString("pt_big_img"))
+            Log.d(TAG, "onMessageReceived: in else part 2")
+            var message = extras.getString("message")
+            var image = getBitmapfromUrl(extras.getString("image"))
             var link = extras.getString("link")
             var which = extras.getString("which")
-            var title = extras.getString("pt_title")
-            var pt_small_icon = extras.getInt("pt_small_icon", R.drawable.ic_launcher_foreground)
+            var title = extras.getString("title")
+            if(message==null || message.equals("")){
+                message = extras!!.getString("nm")
+            }
+            if(title==null || title.equals("")){
+                title = extras.getString("nt")
+            }
             Log.i("Result", "Got the data yessss")
             val rand = Random()
             val a = rand.nextInt(101) + 1
-            val intent = Intent(
-                applicationContext, Class.forName(
-                    extras.getString(
-                        "mainActivity",
-                        ""
-                    )
-                )
-            )
+            val intent = Intent(applicationContext, FCM_TARGET_ACTIVITY)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.putExtra("which", which)
@@ -184,12 +187,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            Log.d(TAG, "onMessageReceived: in else part 3")
+            Log.d(TAG, "sendNotification: " + title + " " + message)
             val notificationBuilder: NotificationCompat.Builder =
                 NotificationCompat.Builder(applicationContext)
                     .setLargeIcon(image) /*Notification icon image*/
-                    .setSmallIcon(pt_small_icon)
+                    .setSmallIcon(FCM_ICON)
                     .setContentTitle(title)
-                    .setContentText(messageBody)
+                    .setContentText(message)
                     .setStyle(
                         NotificationCompat.BigPictureStyle()
                             .bigPicture(image)
@@ -231,15 +236,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             setCustomContentViewBasicKeys(contentViewRating!!, context)
             contentViewSmall = RemoteViews(packageName, R.layout.content_view_small)
             setCustomContentViewBasicKeys(contentViewSmall!!, context)
-            setCustomContentViewTitle(contentViewRating!!, pt_title)
-            setCustomContentViewTitle(contentViewSmall!!, pt_title)
-            setCustomContentViewMessage(contentViewRating!!, pt_msg)
-            setCustomContentViewMessage(contentViewSmall!!, pt_msg)
-            setCustomContentViewMessageSummary(contentViewRating!!, pt_msg_summary)
-            setCustomContentViewTitleColour(contentViewRating!!, pt_title_clr)
-            setCustomContentViewTitleColour(contentViewSmall!!, pt_title_clr)
-            setCustomContentViewMessageColour(contentViewRating!!, pt_msg_clr)
-            setCustomContentViewMessageColour(contentViewSmall!!, pt_msg_clr)
+            setCustomContentViewTitle(contentViewRating!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+            setCustomContentViewMessage(contentViewRating!!, message)
+            setCustomContentViewMessage(contentViewSmall!!, message)
+            setCustomContentViewMessageSummary(contentViewRating!!, messageBody)
+            setCustomContentViewTitleColour(contentViewRating!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            setCustomContentViewMessageColour(contentViewRating!!, message_clr)
+            setCustomContentViewMessageColour(contentViewSmall!!, message_clr)
             setCustomContentViewExpandedBackgroundColour(contentViewRating!!, pt_bg)
             setCustomContentViewCollapsedBackgroundColour(contentViewSmall!!, pt_bg)
 
@@ -250,10 +255,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             contentViewRating!!.setImageViewResource(R.id.star4, R.drawable.pt_star_outline)
             contentViewRating!!.setImageViewResource(R.id.star5, R.drawable.pt_star_outline)
 
-//            setCustomContentViewBigImage(contentViewRating, pt_big_img);
-            bitmapImage = getBitmapfromUrl(pt_big_img)
+//            setCustomContentViewBigImage(contentViewRating, image);
+            bitmapImage = getBitmapfromUrl(image)
             contentViewRating!!.setImageViewBitmap(R.id.big_image, bitmapImage)
-            //            setCustomContentViewLargeIcon(contentViewSmall, pt_large_icon);
+            //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
             contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
 
 
@@ -330,9 +335,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             val notificationBuilder = NotificationCompat.Builder(this, id)
                 //                    .setLargeIcon(image)/*Notification icon image*/
-                .setSmallIcon(pt_small_icon)
-                .setContentTitle(pt_title)
-                .setContentText(pt_msg) //                    .setStyle(new NotificationCompat.BigPictureStyle()
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setContentText(message) //                    .setStyle(new NotificationCompat.BigPictureStyle()
                 //                            .bigPicture(image))/*Notification with Image*/
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(contentViewSmall)
@@ -371,34 +376,26 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         try {
             contentViewBig = RemoteViews(context.packageName, R.layout.zero_bezel)
             setCustomContentViewBasicKeys(contentViewBig!!, context)
-            val textOnlySmallView = pt_small_view != null && pt_small_view == "text_only"
-            contentViewSmall = if (textOnlySmallView) {
-                RemoteViews(context.packageName, R.layout.cv_small_text_only)
-            } else {
-                RemoteViews(context.packageName, R.layout.cv_small_zero_bezel)
-            }
+            contentViewSmall = RemoteViews(context.packageName, R.layout.cv_small_zero_bezel)
 
 
             setCustomContentViewBasicKeys(contentViewSmall!!, context)
-            setCustomContentViewTitle(contentViewBig!!, pt_title)
-            setCustomContentViewTitle(contentViewSmall!!, pt_title)
-            setCustomContentViewMessage(contentViewBig!!, pt_msg)
+            setCustomContentViewTitle(contentViewBig!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+            setCustomContentViewMessage(contentViewBig!!, message)
 
-            if (textOnlySmallView) {
-                contentViewSmall!!.setViewVisibility(R.id.msg, View.GONE)
-            } else {
-                setCustomContentViewMessage(contentViewSmall!!, pt_msg)
-            }
+            setCustomContentViewMessage(contentViewSmall!!, message)
 
-            setCustomContentViewMessageSummary(contentViewBig!!, pt_msg_summary)
-            setCustomContentViewTitleColour(contentViewBig!!, pt_title_clr)
-            setCustomContentViewTitleColour(contentViewSmall!!, pt_title_clr)
+
+            setCustomContentViewMessageSummary(contentViewBig!!, messageBody)
+            setCustomContentViewTitleColour(contentViewBig!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
             setCustomContentViewExpandedBackgroundColour(contentViewBig!!, pt_bg)
             setCustomContentViewCollapsedBackgroundColour(contentViewSmall!!, pt_bg)
-            setCustomContentViewMessageColour(contentViewBig!!, pt_msg_clr)
-            setCustomContentViewMessageColour(contentViewSmall!!, pt_msg_clr)
+            setCustomContentViewMessageColour(contentViewBig!!, message_clr)
+            setCustomContentViewMessageColour(contentViewSmall!!, message_clr)
 
-            val launchIntent = Intent(context, Class.forName(mainActivity))
+            val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
             launchIntent.putExtras(extras)
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
             val pIntent = PendingIntent.getActivity(
@@ -407,23 +404,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 launchIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
-            bitmapImage = getBitmapfromUrl(pt_big_img)
+            bitmapImage = getBitmapfromUrl(image)
             contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
 
-            if (!textOnlySmallView) {
-                contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
-            }
-            if (textOnlySmallView) {
-                contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
-            }
+            contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
 
             contentViewSmall!!.setImageViewResource(
                 R.id.small_icon,
-                R.drawable.ic_launcher_foreground
+                FCM_ICON
             )
             contentViewBig!!.setImageViewResource(
                 R.id.small_icon,
-                R.drawable.ic_launcher_foreground
+                FCM_ICON
             )
 //
 //            setCustomContentViewDotSep(contentViewBig);
@@ -437,9 +429,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val notificationBuilder = NotificationCompat.Builder(this, id)
                 //.setLargeIcon(image)/*Notification icon image*/
-                .setSmallIcon(pt_small_icon)
-                .setContentTitle(pt_title)
-                .setContentText(pt_msg)
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setContentText(message)
                 //.setStyle(new NotificationCompat.BigPictureStyle()
                 //.bigPicture(image))/*Notification with Image*/
                 //.setStyle(new NotificationCompat.DecoratedCustomViewStyle())
@@ -472,6 +464,99 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
 
+
+    private fun renderOneBezelNotification(context: Context, extras: Bundle) {
+        try {
+            contentViewBig = RemoteViews(context.packageName, R.layout.one_bezel)
+            setCustomContentViewBasicKeys(contentViewBig!!, context)
+            contentViewSmall = RemoteViews(context.packageName, R.layout.cv_small_one_bezel)
+
+            setCustomContentViewBasicKeys(contentViewSmall!!, context)
+            setCustomContentViewTitle(contentViewBig!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+            setCustomContentViewMessage(contentViewBig!!, message)
+            setCustomContentViewMessage(contentViewSmall!!, message)
+
+
+            setCustomContentViewMessageSummary(contentViewBig!!, messageBody)
+            setCustomContentViewTitleColour(contentViewBig!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            setCustomContentViewExpandedBackgroundColour(contentViewBig!!, pt_bg)
+            setCustomContentViewCollapsedBackgroundColour(contentViewSmall!!, pt_bg)
+            setCustomContentViewMessageColour(contentViewBig!!, message_clr)
+            setCustomContentViewMessageColour(contentViewSmall!!, message_clr)
+
+            val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
+            launchIntent.putExtras(extras)
+            launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            val pIntent = PendingIntent.getActivity(
+                context,
+                0,
+                launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+            )
+            bitmapImage = getBitmapfromUrl(image)
+            contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+            contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+
+
+            contentViewSmall!!.setImageViewResource(
+                R.id.small_icon,
+                FCM_ICON
+            )
+            contentViewBig!!.setImageViewResource(
+                R.id.small_icon,
+                FCM_ICON
+            )
+//
+//            setCustomContentViewDotSep(contentViewBig);
+//            setCustomContentViewDotSep(contentViewSmall);
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val id = "messenger_general"
+            val name = "General"
+            val description = "General Notifications sent by the app"
+            val rand = Random()
+            val a = rand.nextInt(101) + 1
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val notificationBuilder = NotificationCompat.Builder(this, id)
+                //.setLargeIcon(image)/*Notification icon image*/
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setContentText(message)
+                //.setStyle(new NotificationCompat.BigPictureStyle()
+                //.bigPicture(image))/*Notification with Image*/
+                //.setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(contentViewSmall)
+                .setCustomBigContentView(contentViewBig)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pIntent)
+                .setPriority(Notification.PRIORITY_DEFAULT)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // The id of the channel.
+                val mChannel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
+                mChannel.description = description
+                mChannel.enableLights(true)
+                mChannel.lightColor = Color.BLUE
+                mChannel.enableVibration(true)
+                if (notificationManager != null) {
+                    notificationManager.createNotificationChannel(mChannel)
+                    notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                }
+            }
+            else {
+                notificationManager?.notify(a + 1, notificationBuilder.build())
+            }
+            Log.d(TAG, "renderOneBezelNotification: ")
+        } catch (t: Throwable) {
+            Log.d(TAG, "renderOneBezelNotification: $t")
+        }
+    }
+
+
+
+
     /*
      *To get a Bitmap image from the URL received
      * */
@@ -489,192 +574,36 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-
-
-    private fun setPendingIntent(context: Context, extras: Bundle, launchIntent: Intent): PendingIntent {
-        launchIntent.putExtras(extras)
-        launchIntent.flags =
-            Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        return PendingIntent.getBroadcast(
-            context, System.currentTimeMillis().toInt(),
-            launchIntent, PendingIntent.FLAG_UPDATE_CURRENT
-        )
-    }
-
-
-    private fun setCustomContentViewBasicKeys(contentView: RemoteViews, context: Context) {
-        contentView.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
-        contentView.setTextViewText(R.id.timestamp, Utils.getTimeStamp(context))
-        if (pt_subtitle != null && !pt_subtitle!!.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                contentView.setTextViewText(
-                    R.id.subtitle, Html.fromHtml(
-                        pt_subtitle,
-                        Html.FROM_HTML_MODE_LEGACY
-                    )
-                )
-            } else {
-                contentView.setTextViewText(R.id.subtitle, Html.fromHtml(pt_subtitle))
-            }
-        } else {
-            contentView.setViewVisibility(R.id.subtitle, View.GONE)
-            contentView.setViewVisibility(R.id.sep_subtitle, View.GONE)
-        }
-        if (pt_meta_clr != null && !pt_meta_clr!!.isEmpty()) {
-            contentView.setTextColor(
-                R.id.app_name,
-                Utils.getColour(pt_meta_clr, "#A6A6A6")
-            )
-            contentView.setTextColor(
-                R.id.timestamp,
-                Utils.getColour(pt_meta_clr, "#A6A6A6")
-            )
-            contentView.setTextColor(
-                R.id.subtitle,
-                Utils.getColour(pt_meta_clr, "#A6A6A6")
-            )
-            setDotSep(context)
-        }
-    }
-
-
-    private fun setDotSep(context: Context) {
+    fun checkForNotifications(context: Context, intent: Intent, webViewActivityToOpen: Class<out Activity?>?, activityToOpen: Class<out Activity?>?, intentParam1: String, intentParam2: String, intentParam3: String)
+    {
         try {
-            pt_dot = context.resources.getIdentifier(
-                "pt_dot_sep",
-                "drawable",
-                context.packageName
-            )
-            pt_dot_sep = Utils.setBitMapColour(context, pt_dot, pt_meta_clr)
-        } catch (e: NullPointerException) {
-//            PTLog.debug("NPE while setting dot sep color");
-        }
-    }
-
-    private fun setCustomContentViewMessageSummary(
-        contentView: RemoteViews,
-        pt_msg_summary: String?
-    ) {
-        if (pt_msg_summary != null && !pt_msg_summary.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                contentView.setTextViewText(
-                    R.id.msg,
-                    Html.fromHtml(pt_msg_summary, Html.FROM_HTML_MODE_LEGACY)
-                )
-            } else {
-                contentView.setTextViewText(R.id.msg, Html.fromHtml(pt_msg_summary))
+            val rating: Int = intent.getIntExtra("rating", 0)
+            Log.i("Result", "Got the data " + intent.getIntExtra("rating", 0))
+            if (intent.hasExtra("rating")) {
+                if (rating == 5) {
+                    val manager = ReviewManagerFactory.create(context)
+                    val request = manager.requestReviewFlow()
+                    request.addOnCompleteListener { task: Task<ReviewInfo?> ->
+                        if (task.isSuccessful) {
+                            // We can get the ReviewInfo object
+                            val reviewInfo = task.result
+                            val myActivity: Activity = context as Activity
+                            val flow = manager.launchReviewFlow(myActivity, reviewInfo)
+                            flow.addOnCompleteListener { taask: Task<Void?>? ->
+                                Log.d("main", "inAppreview: completed")
+                            }
+                        } else {
+                            // There was some problem, continue regardless of the result.
+                            Log.d("inAppreview", "checkForNotis: failed")
+                        }
+                    }
+                } else if (rating > 0) {
+                    Toast.makeText(context, "Thanks for your feedback :)", Toast.LENGTH_SHORT)
+                        .show()
+                }
             }
-        }
-    }
 
-    private fun setCustomContentViewMessageColour(contentView: RemoteViews, pt_msg_clr: String?) {
-        if (pt_msg_clr != null && !pt_msg_clr.isEmpty()) {
-            contentView.setTextColor(
-                R.id.msg,
-
-                Utils.getColour(pt_msg_clr, "#000000")
-            )
-        }
-    }
-
-    private fun setCustomContentViewTitleColour(contentView: RemoteViews, pt_title_clr: String?) {
-        if (pt_title_clr != null && !pt_title_clr.isEmpty()) {
-            contentView.setTextColor(
-                R.id.title,
-                Utils.getColour(pt_title_clr, "#000000")
-            )
-        }
-    }
-
-    private fun setCustomContentViewExpandedBackgroundColour(
-        contentView: RemoteViews,
-        pt_bg: String?
-    ) {
-        if (pt_bg != null && !pt_bg.isEmpty()) {
-            contentView.setInt(
-                R.id.content_view_big,
-                "setBackgroundColor",
-                Utils.getColour(pt_bg, "#FFFFFF")
-            )
-        }
-    }
-
-    private fun setCustomContentViewCollapsedBackgroundColour(
-        contentView: RemoteViews,
-        pt_bg: String?
-    ) {
-        if (pt_bg != null && !pt_bg.isEmpty()) {
-            contentView.setInt(
-                R.id.content_view_small,
-                "setBackgroundColor",
-                Utils.getColour(pt_bg, "#FFFFFF")
-            )
-        }
-    }
-
-    private fun setCustomContentViewMessage(contentView: RemoteViews, pt_msg: String?) {
-        if (pt_msg != null && !pt_msg.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                contentView.setTextViewText(
-                    R.id.msg,
-                    Html.fromHtml(pt_msg, Html.FROM_HTML_MODE_LEGACY)
-                )
-            } else {
-                contentView.setTextViewText(R.id.msg, Html.fromHtml(pt_msg))
-            }
-        }
-    }
-
-    private fun setCustomContentViewTitle(contentView: RemoteViews, pt_title: String?) {
-        if (pt_title != null && !pt_title.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                contentView.setTextViewText(
-                    R.id.title,
-                    Html.fromHtml(pt_title, Html.FROM_HTML_MODE_LEGACY)
-                )
-            } else {
-                contentView.setTextViewText(R.id.title, Html.fromHtml(pt_title))
-            }
-        }
-    }
-
-    private fun setUp(context: Context, extras: Bundle?) {
-        pt_id = extras!!.getString("pt_id")
-        pt_msg = extras!!.getString("pt_msg")
-        pt_msg_summary = extras!!.getString("pt_msg_summary")
-        pt_msg_clr = extras!!.getString("pt_msg_clr")
-        pt_title = extras!!.getString("pt_title")
-        pt_title_clr = extras!!.getString("pt_title_clr")
-        pt_meta_clr = extras!!.getString("pt_meta_clr")
-        pt_bg = extras!!.getString("pt_bg")
-        pt_big_img = extras!!.getString("pt_big_img")
-        pt_large_icon = extras!!.getString("pt_large_icon")
-        pt_small_icon = extras.getInt("pt_small_icon", R.drawable.ic_launcher_foreground)
-        pt_small_icon_clr = extras!!.getString("pt_small_icon_clr")
-        pt_subtitle = extras!!.getString("pt_subtitle")
-        mainActivity = extras!!.getString("mainActivity")
-
-    }
-
-    companion object {
-        private const val TAG = "FirebaseMessageService"
-        fun checkForNotifications(
-            context: Context,
-            intent: Intent,
-            webViewActivityToOpen: Class<out Activity?>?,
-            activityToOpen: Class<out Activity?>?,
-            intentParam: String
-        ) {
-            try {
-                val rating: Int = intent.getIntExtra("rating", 0)
-
-
-
-
-
-
-
-
+            if (intent.hasExtra("which")) {
                 val which = intent.getStringExtra("which")
                 val url = intent.getStringExtra("link")
                 val title = intent.getStringExtra("title")
@@ -685,7 +614,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                             val intent1 = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                             context.startActivity(intent1)
                         } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "Unable to open the link", Toast.LENGTH_LONG)
+                            Toast.makeText(
+                                context,
+                                "Unable to open the link",
+                                Toast.LENGTH_LONG
+                            )
                                 .show()
                         }
                     }
@@ -720,7 +653,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     "D" -> {
                         try {
                             val intent1 = Intent(context, activityToOpen)
-                            intent1.putExtra(intentParam, url)
+                            intent1.putExtra(intentParam1, url)
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -730,11 +663,170 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                         Log.d(TAG, "No event fired")
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "checkForNotifications: \$e")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "checkForNotifications: \$e")
 //                Dont push
+        }
+    }
+
+
+
+    private fun setPendingIntent(context: Context, extras: Bundle, launchIntent: Intent): PendingIntent {
+        launchIntent.putExtras(extras)
+        launchIntent.flags =
+            Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        return PendingIntent.getBroadcast(
+            context, System.currentTimeMillis().toInt(),
+            launchIntent, PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+
+    private fun setCustomContentViewBasicKeys(contentView: RemoteViews, context: Context) {
+        contentView.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+        contentView.setTextViewText(R.id.timestamp, Utils.getTimeStamp(context))
+        contentView.setViewVisibility(R.id.subtitle, View.GONE)
+        contentView.setViewVisibility(R.id.sep_subtitle, View.GONE)
+        if (meta_clr != null && !meta_clr!!.isEmpty()) {
+            contentView.setTextColor(
+                R.id.app_name,
+                Utils.getColour(meta_clr, "#A6A6A6")
+            )
+            contentView.setTextColor(
+                R.id.timestamp,
+                Utils.getColour(meta_clr, "#A6A6A6")
+            )
+            contentView.setTextColor(
+                R.id.subtitle,
+                Utils.getColour(meta_clr, "#A6A6A6")
+            )
+            setDotSep(context)
+        }
+    }
+
+
+    private fun setDotSep(context: Context) {
+        try {
+            pt_dot = context.resources.getIdentifier(
+                "dot_sep",
+                "drawable",
+                context.packageName
+            )
+            dot_sep = Utils.setBitMapColour(context, pt_dot, meta_clr)
+        } catch (e: NullPointerException) {
+//            PTLog.debug("NPE while setting dot sep color");
+        }
+    }
+
+    private fun setCustomContentViewMessageSummary(
+        contentView: RemoteViews,
+        messageBody: String?
+    ) {
+        if (messageBody != null && !messageBody.isEmpty()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                contentView.setTextViewText(
+                    R.id.msg,
+                    Html.fromHtml(messageBody, Html.FROM_HTML_MODE_LEGACY)
+                )
+            } else {
+                contentView.setTextViewText(R.id.msg, Html.fromHtml(messageBody))
             }
         }
+    }
+
+    private fun setCustomContentViewMessageColour(contentView: RemoteViews, message_clr: String?) {
+        if (message_clr != null && !message_clr.isEmpty()) {
+            contentView.setTextColor(
+                R.id.msg,
+
+                Utils.getColour(message_clr, "#000000")
+            )
+        }
+    }
+
+    private fun setCustomContentViewTitleColour(contentView: RemoteViews, title_clr: String?) {
+        if (title_clr != null && !title_clr.isEmpty()) {
+            contentView.setTextColor(
+                R.id.title,
+                Utils.getColour(title_clr, "#000000")
+            )
+        }
+    }
+
+    private fun setCustomContentViewExpandedBackgroundColour(
+        contentView: RemoteViews,
+        pt_bg: String?
+    ) {
+        if (pt_bg != null && !pt_bg.isEmpty()) {
+            contentView.setInt(
+                R.id.content_view_big,
+                "setBackgroundColor",
+                Utils.getColour(pt_bg, "#FFFFFF")
+            )
+        }
+    }
+
+    private fun setCustomContentViewCollapsedBackgroundColour(
+        contentView: RemoteViews,
+        pt_bg: String?
+    ) {
+        if (pt_bg != null && !pt_bg.isEmpty()) {
+            contentView.setInt(
+                R.id.content_view_small,
+                "setBackgroundColor",
+                Utils.getColour(pt_bg, "#FFFFFF")
+            )
+        }
+    }
+
+    private fun setCustomContentViewMessage(contentView: RemoteViews, message: String?) {
+        if (message != null && !message.isEmpty()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                contentView.setTextViewText(
+                    R.id.msg,
+                    Html.fromHtml(message, Html.FROM_HTML_MODE_LEGACY)
+                )
+            } else {
+                contentView.setTextViewText(R.id.msg, Html.fromHtml(message))
+            }
+        }
+    }
+
+    private fun setCustomContentViewTitle(contentView: RemoteViews, title: String?) {
+        if (title != null && !title.isEmpty()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                contentView.setTextViewText(
+                    R.id.title,
+                    Html.fromHtml(title, Html.FROM_HTML_MODE_LEGACY)
+                )
+            } else {
+                contentView.setTextViewText(R.id.title, Html.fromHtml(title))
+            }
+        }
+    }
+
+    private fun setUp(context: Context, extras: Bundle?) {
+        message = extras!!.getString("message")
+        if(message==null || message.equals("")){
+            message = extras!!.getString("nm")
+        }
+        messageBody = extras!!.getString("messageBody")
+        message_clr = extras!!.getString("message_clr")
+        title = extras!!.getString("title")
+        if(title==null || title.equals("")){
+            title = extras.getString("nt")
+        }
+        title_clr = extras!!.getString("title_clr")
+        meta_clr = extras!!.getString("meta_clr")
+        pt_bg = extras!!.getString("pt_bg")
+        image = extras!!.getString("image")
+        large_icon = extras!!.getString("large_icon")
+        small_icon_clr = extras!!.getString("small_icon_clr")
+    }
+
+    companion object {
+        private const val TAG = "FirebaseMessageService"
         var bitmapImage: Bitmap? = null
             private set
     }

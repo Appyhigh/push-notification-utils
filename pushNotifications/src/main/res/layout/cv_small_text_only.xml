@@ -39,7 +39,8 @@
             android:layout_marginTop="4dp"
             android:text="title"
             android:textAppearance="@style/PushTitle"
-            android:layout_marginLeft="@dimen/metadata_title_margin_horizontal" />
+            android:layout_marginLeft="@dimen/metadata_title_margin_horizontal"
+            android:textSize="@dimen/bezel_font_size"/>
     </RelativeLayout>
 
 </RelativeLayout>

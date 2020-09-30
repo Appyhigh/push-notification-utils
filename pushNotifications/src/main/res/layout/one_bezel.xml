@@ -12,11 +12,37 @@
         android:layout_height="match_parent"
         android:scaleType="centerCrop" />
 
+
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignBottom="@+id/big_image"
         android:background="@drawable/scrim" />
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="10dp"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/small_icon"
+            android:layout_width="15sp"
+            android:layout_height="15sp"
+            android:layout_alignParentStart="true"
+            android:layout_marginEnd="@dimen/metadata_margin_x" />
+
+        <TextView
+            android:id="@+id/app_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/small_icon"
+            android:text="app name"
+            android:textSize="12sp"
+            android:textAppearance="@style/MetaData" />
+    </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/rel_lyt"
@@ -30,21 +56,15 @@
         android:paddingRight="@dimen/padding_horizontal"
         android:paddingBottom="@dimen/padding_vertical">
 
-        <include
-            android:id="@+id/metadata"
-            layout="@layout/metadata" />
 
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/metadata"
-            android:layout_alignStart="@id/metadata"
             android:layout_marginTop="@dimen/metadata_title_margin_vertical"
             android:text="title"
             android:textAppearance="@style/PushTitle"
             android:textColor="@color/white"
-            android:layout_alignLeft="@id/metadata"
             android:textSize="13sp"/>
 
         <TextView

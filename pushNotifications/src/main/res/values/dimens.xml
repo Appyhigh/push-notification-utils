@@ -15,7 +15,8 @@
     <dimen name="metadata_title_margin_vertical">4dp</dimen>
     <dimen name="metadata_title_margin_horizontal">4dp</dimen>
 
-    <dimen name="metadata_font_size">10dp</dimen>
+    <dimen name="metadata_font_size">15dp</dimen>
+    <dimen name="bezel_font_size">12dp</dimen>
 
     <dimen name="metadata_small_icon_x">16dp</dimen>
     <dimen name="metadata_small_icon_y">16dp</dimen>

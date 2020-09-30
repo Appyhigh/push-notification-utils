@@ -42,7 +42,8 @@
             android:maxLines="1"
             android:text="title"
             android:textAppearance="@style/PushTitle"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textSize="13sp"/>
 
         <TextView
             android:id="@+id/msg"
@@ -54,7 +55,8 @@
             android:maxLines="2"
             android:text="message message message"
             android:textAppearance="@style/PushMessage"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textSize="13sp"/>
 
     </RelativeLayout>
 </RelativeLayout>

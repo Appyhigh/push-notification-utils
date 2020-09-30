@@ -1,9 +1,6 @@
 package com.appyhigh.pushNotifications
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.app.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,33 +14,26 @@ import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import com.appyhigh.pushNotifications.Constants.FCM_ICON
+import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
 import java.util.*
 import com.appyhigh.pushNotifications.MyFirebaseMessagingService.Companion.bitmapImage;
 
 class PushTemplateReceiver : BroadcastReceiver() {
-    private var pt_small_icon =0;
-    private var mainActivity: String? = null
     var clicked = 0
     private var contentViewSmall: RemoteViews? = null
     private var contentViewRating: RemoteViews? = null
-    private var pt_id: String? = null
-    private var pt_title: String? = null
-    private var pt_msg: String? = null
-    private var pt_msg_summary: String? = null
-    private val pt_img_small: String? = null
-    private var pt_large_icon: String? = null
-    private var pt_title_clr: String? = null
-    private var pt_msg_clr: String? = null
-    private var deepLinkList = ArrayList<String?>()
+    private var title: String? = null
+    private var message: String? = null
+    private var messageBody: String? = null
+    private var large_icon: String? = null
+    private var title_clr: String? = null
+    private var message_clr: String? = null
     private var pt_bg: String? = null
-    private val smallIcon = 0
     private var pt_dot = 0
-    private var pt_small_icon_clr: String? = null
-    private var pt_big_img: String? = null
-    private var pt_meta_clr: String? = null
-    private val pt_dot_sep: String? = null
-    private var pt_subtitle: String? = null
-    private val pID: String? = null
+    private var small_icon_clr: String? = null
+    private var image: String? = null
+    private var meta_clr: String? = null
     private val TAG = "TemplateReciver"
 
 
@@ -52,7 +42,6 @@ class PushTemplateReceiver : BroadcastReceiver() {
         //        Utils.createSilentNotificationChannel(context);
         if (intent.extras != null) {
             val extras = intent.extras
-            deepLinkList = Utils.getDeepLinkListFromExtras(extras!!)
             setUp(context, extras)
             handleRatingNotification(context, extras)
         }
@@ -67,21 +56,20 @@ class PushTemplateReceiver : BroadcastReceiver() {
             setCustomContentViewBasicKeys(contentViewRating!!, context)
             contentViewSmall = RemoteViews(context.packageName, R.layout.content_view_small)
             setCustomContentViewBasicKeys(contentViewSmall!!, context)
-            setCustomContentViewTitle(contentViewRating!!, pt_title)
-            setCustomContentViewTitle(contentViewSmall!!, pt_title)
-            setCustomContentViewMessage(contentViewRating!!, pt_msg)
-            setCustomContentViewMessage(contentViewSmall!!, pt_msg)
-            setCustomContentViewMessageSummary(contentViewRating!!, pt_msg_summary)
-            setCustomContentViewTitleColour(contentViewRating!!, pt_title_clr)
-            setCustomContentViewTitleColour(contentViewSmall!!, pt_title_clr)
-            setCustomContentViewMessageColour(contentViewRating!!, pt_msg_clr)
-            setCustomContentViewMessageColour(contentViewSmall!!, pt_msg_clr)
+            setCustomContentViewTitle(contentViewRating!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+            setCustomContentViewMessage(contentViewRating!!, message)
+            setCustomContentViewMessage(contentViewSmall!!, message)
+            setCustomContentViewMessageSummary(contentViewRating!!, messageBody)
+            setCustomContentViewTitleColour(contentViewRating!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            setCustomContentViewMessageColour(contentViewRating!!, message_clr)
+            setCustomContentViewMessageColour(contentViewSmall!!, message_clr)
             setCustomContentViewExpandedBackgroundColour(contentViewRating!!, pt_bg)
             setCustomContentViewCollapsedBackgroundColour(contentViewSmall!!, pt_bg)
             val map = HashMap<String, Any>()
-            Log.d(TAG, "handleRatingNotification big image: $pt_big_img")
+            Log.d(TAG, "handleRatingNotification big image: $image")
             clicked = extras!!.getInt("clicked", 0)
-            val pt_dl_clicked = deepLinkList[4]
             Log.d(TAG, "handleRatingNotification: $clicked")
             when (clicked) {
                 1 -> contentViewRating!!.setImageViewResource(R.id.star1, R.drawable.pt_star_filled)
@@ -121,12 +109,7 @@ class PushTemplateReceiver : BroadcastReceiver() {
             val name = "General"
             val description = "General Notifications sent by the app"
             val notificationId = extras.getInt("notificationId")
-            var launchIntent = Intent()
-            if (clicked == 5 && !pt_dl_clicked.equals("")) {
-                launchIntent = Intent(Intent.ACTION_VIEW, Uri.parse(pt_dl_clicked))
-            } else {
-                launchIntent = Intent(context, Class.forName(mainActivity))
-            }
+            var launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
             launchIntent.putExtras(extras)
             launchIntent.putExtra("rating", clicked)
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
@@ -143,9 +126,9 @@ class PushTemplateReceiver : BroadcastReceiver() {
                 context,
                 id
             ) //                    .setLargeIcon(image)/*Notification icon image*/
-                .setSmallIcon(pt_small_icon)
-                .setContentTitle(pt_title)
-                .setContentText(pt_msg) //                    .setStyle(new NotificationCompat.BigPictureStyle()
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setContentText(message) //                    .setStyle(new NotificationCompat.BigPictureStyle()
                 //                            .bigPicture(image))/*Notification with Image*/
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(contentViewSmall)
@@ -187,31 +170,18 @@ class PushTemplateReceiver : BroadcastReceiver() {
     private fun setCustomContentViewBasicKeys(contentView: RemoteViews, context: Context) {
         contentView.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
         contentView.setTextViewText(R.id.timestamp, Utils.getTimeStamp(context))
-        if (pt_subtitle != null && !pt_subtitle!!.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                contentView.setTextViewText(
-                    R.id.subtitle,
-                    Html.fromHtml(pt_subtitle, Html.FROM_HTML_MODE_LEGACY)
-                )
-            } else {
-                contentView.setTextViewText(R.id.subtitle, Html.fromHtml(pt_subtitle))
-            }
-        } else {
-            contentView.setViewVisibility(R.id.subtitle, View.GONE)
-            contentView.setViewVisibility(R.id.sep_subtitle, View.GONE)
-        }
-        if (pt_meta_clr != null && !pt_meta_clr!!.isEmpty()) {
+        if (meta_clr != null && !meta_clr!!.isEmpty()) {
             contentView.setTextColor(
                 R.id.app_name,
-                Utils.getColour(pt_meta_clr, "#A6A6A6")
+                Utils.getColour(meta_clr, "#A6A6A6")
             )
             contentView.setTextColor(
                 R.id.timestamp,
-                Utils.getColour(pt_meta_clr, "#A6A6A6")
+                Utils.getColour(meta_clr, "#A6A6A6")
             )
             contentView.setTextColor(
                 R.id.subtitle,
-                Utils.getColour(pt_meta_clr, "#A6A6A6")
+                Utils.getColour(meta_clr, "#A6A6A6")
             )
             setDotSep(context)
         }
@@ -219,34 +189,34 @@ class PushTemplateReceiver : BroadcastReceiver() {
 
     private fun setCustomContentViewMessageSummary(
         contentView: RemoteViews,
-        pt_msg_summary: String?
+        messageBody: String?
     ) {
-        if (pt_msg_summary != null && !pt_msg_summary.isEmpty()) {
+        if (messageBody != null && !messageBody.isEmpty()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 contentView.setTextViewText(
                     R.id.msg,
-                    Html.fromHtml(pt_msg_summary, Html.FROM_HTML_MODE_LEGACY)
+                    Html.fromHtml(messageBody, Html.FROM_HTML_MODE_LEGACY)
                 )
             } else {
-                contentView.setTextViewText(R.id.msg, Html.fromHtml(pt_msg_summary))
+                contentView.setTextViewText(R.id.msg, Html.fromHtml(messageBody))
             }
         }
     }
 
-    private fun setCustomContentViewMessageColour(contentView: RemoteViews, pt_msg_clr: String?) {
-        if (pt_msg_clr != null && !pt_msg_clr.isEmpty()) {
+    private fun setCustomContentViewMessageColour(contentView: RemoteViews, message_clr: String?) {
+        if (message_clr != null && !message_clr.isEmpty()) {
             contentView.setTextColor(
                 R.id.msg,
-                Utils.getColour(pt_msg_clr, "#000000")
+                Utils.getColour(message_clr, "#000000")
             )
         }
     }
 
-    private fun setCustomContentViewTitleColour(contentView: RemoteViews, pt_title_clr: String?) {
-        if (pt_title_clr != null && !pt_title_clr.isEmpty()) {
+    private fun setCustomContentViewTitleColour(contentView: RemoteViews, title_clr: String?) {
+        if (title_clr != null && !title_clr.isEmpty()) {
             contentView.setTextColor(
                 R.id.title,
-                Utils.getColour(pt_title_clr, "#000000")
+                Utils.getColour(title_clr, "#000000")
             )
         }
     }
@@ -277,28 +247,28 @@ class PushTemplateReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun setCustomContentViewMessage(contentView: RemoteViews, pt_msg: String?) {
-        if (pt_msg != null && !pt_msg.isEmpty()) {
+    private fun setCustomContentViewMessage(contentView: RemoteViews, message: String?) {
+        if (message != null && !message.isEmpty()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 contentView.setTextViewText(
                     R.id.msg,
-                    Html.fromHtml(pt_msg, Html.FROM_HTML_MODE_LEGACY)
+                    Html.fromHtml(message, Html.FROM_HTML_MODE_LEGACY)
                 )
             } else {
-                contentView.setTextViewText(R.id.msg, Html.fromHtml(pt_msg))
+                contentView.setTextViewText(R.id.msg, Html.fromHtml(message))
             }
         }
     }
 
-    private fun setCustomContentViewTitle(contentView: RemoteViews, pt_title: String?) {
-        if (pt_title != null && !pt_title.isEmpty()) {
+    private fun setCustomContentViewTitle(contentView: RemoteViews, title: String?) {
+        if (title != null && !title.isEmpty()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 contentView.setTextViewText(
                     R.id.title,
-                    Html.fromHtml(pt_title, Html.FROM_HTML_MODE_LEGACY)
+                    Html.fromHtml(title, Html.FROM_HTML_MODE_LEGACY)
                 )
             } else {
-                contentView.setTextViewText(R.id.title, Html.fromHtml(pt_title))
+                contentView.setTextViewText(R.id.title, Html.fromHtml(title))
             }
         }
     }
@@ -306,30 +276,34 @@ class PushTemplateReceiver : BroadcastReceiver() {
     private fun setDotSep(context: Context) {
         try {
             pt_dot = context.resources.getIdentifier(
-                "pt_dot_sep",
+                "dot_sep",
                 "drawable",
                 context.packageName
             )
-            //            pt_dot_sep = Utils.setBitMapColour(context, pt_dot, pt_meta_clr);
+            //            dot_sep = Utils.setBitMapColour(context, pt_dot, meta_clr);
         } catch (e: NullPointerException) {
 //            PTLog.debug("NPE while setting dot sep color");
         }
     }
 
     private fun setUp(context: Context, extras: Bundle?) {
-        pt_id = extras!!.getString("pt_id")
-        pt_msg = extras!!.getString("pt_msg")
-        pt_msg_summary = extras!!.getString("pt_msg_summary")
-        pt_msg_clr = extras!!.getString("pt_msg_clr")
-        pt_title = extras!!.getString("pt_title")
-        pt_title_clr = extras!!.getString("pt_title_clr")
-        pt_meta_clr = extras!!.getString("pt_meta_clr")
+        message = extras!!.getString("message")
+        messageBody = extras!!.getString("messageBody")
+        message_clr = extras!!.getString("message_clr")
+        title = extras!!.getString("title")
+        if(message==null || message.equals("")){
+            message = extras!!.getString("nm")
+        }
+        if(title==null || title.equals("")){
+            title = extras.getString("nt")
+        }
+        title_clr = extras!!.getString("title_clr")
+        meta_clr = extras!!.getString("meta_clr")
         pt_bg = extras!!.getString("pt_bg")
-        pt_big_img = extras!!.getString("pt_big_img")
-        pt_large_icon = extras!!.getString("pt_large_icon")
-        pt_small_icon = extras.getInt("pt_small_icon",R.drawable.ic_launcher_foreground)
-        pt_small_icon_clr = extras!!.getString("pt_small_icon_clr")
-        pt_subtitle = extras!!.getString("pt_subtitle")
-        mainActivity = extras!!.getString("mainActivity")
+        image = extras!!.getString("image")
+        large_icon = extras!!.getString("large_icon")
+        small_icon_clr = extras!!.getString("small_icon_clr")
+        FCM_ICON = extras.getInt("small_icon",FCM_ICON)
+        FCM_TARGET_ACTIVITY = Class.forName(extras.getString("target_activity",null)) as Class<out Activity?>?
     }
 }
