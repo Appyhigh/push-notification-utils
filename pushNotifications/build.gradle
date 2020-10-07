@@ -40,5 +40,9 @@ dependencies {
     
     //add for in-app review
     implementation 'com.google.android.play:core:1.8.0'
+
+    //for firebase in-app notifications
+    implementation 'com.google.firebase:firebase-inappmessaging-display:19.1.1'
+
 }
 

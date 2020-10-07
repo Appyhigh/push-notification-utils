@@ -24,7 +24,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation 'com.github.
+implementation 'com.github.Appyhigh.appyhigh-utils:1.0.2'
 
 ```
 3.Add the following line to your *AndroidManifest.xml* for internet permission.
@@ -132,9 +132,10 @@ We have 4 types of push notifications P, B, L and D which are identified by the 
  link | Required if 'which' is entered | url for 'which' type
  large_icon | Optional | Large Icon 
  small_icon | Optional | Small Icon
- title_clr | Optional | Title Color in HEX
- message_clr | Optional | Message Color in HEX
- pt_bg | Required | Background Color in HEX
+ meta_clr | Optional | Color for appname,timestamp in HEX (default - #A6A6A6)
+ title_clr | Optional | Title Color in HEX (default - ##000000)
+ message_clr | Optional | Message Color in HEX (default - #000000)
+ pt_bg | Required | Background Color in HEX (default - #FFFFFF)
  
 ### Zero Bezel Template
  
@@ -150,9 +151,10 @@ We have 4 types of push notifications P, B, L and D which are identified by the 
  link | Required if 'which' is entered | url for 'which' type
  large_icon | Optional | Large Icon 
  small_icon | Optional | Small Icon
- title_clr | Optional | Title Color in HEX
- message_clr | Optional | Message Color in HEX
- pt_bg | Required | Background Color in HEX
+ meta_clr | Optional | Color for appname,timestamp in HEX (default - #A6A6A6)
+ title_clr | Optional | Title Color in HEX (default - ##000000)
+ message_clr | Optional | Message Color in HEX (default - #000000)
+ pt_bg | Required | Background Color in HEX (default - #FFFFFF)
  
  ### One Bezel Template
  
@@ -168,9 +170,10 @@ We have 4 types of push notifications P, B, L and D which are identified by the 
  link | Required if 'which' is entered | url for 'which' type
  large_icon | Optional | Large Icon 
  small_icon | Optional | Small Icon
- title_clr | Optional | Title Color in HEX
- message_clr | Optional | Message Color in HEX
- pt_bg | Required | Background Color in HEX
+ meta_clr | Optional | Color for appname,timestamp in HEX (default - #A6A6A6)
+ title_clr | Optional | Title Color in HEX (default - ##000000)
+ message_clr | Optional | Message Color in HEX (default - #000000)
+ pt_bg | Required | Background Color in HEX (default - #FFFFFF)
   
   
 ### Example data format to send for push notifications
@@ -193,10 +196,13 @@ We have 4 types of push notifications P, B, L and D which are identified by the 
 
 1.Call *checkForNotifications* method in your MainActivity to recieve data from notifications
 ```
-checkForNotifications(context: Context, intent: Intent, webViewActivity: Class<out Activity?>?,activityToOpen: Class<out Activity?>?,intentParam1: String, intentParam2: String, intentParam3: String)
+checkForNotifications(context: Context, intent: Intent, webViewActivity: Class<out Activity?>?,activityToOpen: Class<out Activity?>?,intentParam: String)
 ```
 **Note:**
-Empty string - `""` should be given as default value for intentParam1,intentParam2,intentParam3.
+
+1.All the parameters are required.
+
+2.Empty string - `""` should be given as default value for intentParam.
 
 ### Example
 ```

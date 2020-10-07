@@ -8,9 +8,9 @@
     android:paddingBottom="@dimen/padding_vertical" >
 
 
-<!--    <include-->
-<!--        android:id="@+id/metadata"-->
-<!--        layout="@layout/metadata" />-->
+    <!--    <include-->
+    <!--        android:id="@+id/metadata"-->
+    <!--        layout="@layout/metadata" />-->
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -42,6 +42,7 @@
             android:textAppearance="@style/TextAppearance.Compat.Notification"
             android:layout_alignLeft="@id/title"
             android:layout_alignParentLeft="true"
+            android:maxLines="1"
             android:layout_toLeftOf="@+id/large_icon" />
 
 
