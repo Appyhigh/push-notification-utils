@@ -1,13 +1,10 @@
 package com.appyhigh.pushNotifications
 
 import android.app.*
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.RingtoneManager
 import android.net.Uri
@@ -24,7 +21,6 @@ import java.util.*
 import com.appyhigh.pushNotifications.MyFirebaseMessagingService.Companion.bitmapImage;
 
 class PushTemplateReceiver : BroadcastReceiver() {
-
     var clicked = 0
     private var contentViewSmall: RemoteViews? = null
     private var contentViewRating: RemoteViews? = null
@@ -114,7 +110,6 @@ class PushTemplateReceiver : BroadcastReceiver() {
             val name = "General"
             val description = "General Notifications sent by the app"
             val notificationId = extras.getInt("notificationId")
-
             var launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
             launchIntent.putExtras(extras)
             launchIntent.putExtra("rating", clicked)
@@ -209,7 +204,6 @@ class PushTemplateReceiver : BroadcastReceiver() {
         }
     }
 
-
     private fun setCustomContentViewMessageColour(contentView: RemoteViews, message_clr: String?) {
         if (message_clr != null && !message_clr.isEmpty()) {
             contentView.setTextColor(
@@ -218,7 +212,6 @@ class PushTemplateReceiver : BroadcastReceiver() {
             )
         }
     }
-
 
     private fun setCustomContentViewTitleColour(contentView: RemoteViews, title_clr: String?) {
         if (title_clr != null && !title_clr.isEmpty()) {
@@ -255,7 +248,6 @@ class PushTemplateReceiver : BroadcastReceiver() {
         }
     }
 
-
     private fun setCustomContentViewMessage(contentView: RemoteViews, message: String?) {
         if (message != null && !message.isEmpty()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -268,7 +260,6 @@ class PushTemplateReceiver : BroadcastReceiver() {
             }
         }
     }
-
 
     private fun setCustomContentViewTitle(contentView: RemoteViews, title: String?) {
         if (title != null && !title.isEmpty()) {
@@ -313,7 +304,5 @@ class PushTemplateReceiver : BroadcastReceiver() {
         image = extras!!.getString("image")
         large_icon = extras!!.getString("large_icon")
         small_icon_clr = extras!!.getString("small_icon_clr")
-        FCM_ICON = extras.getInt("small_icon",FCM_ICON)
-        FCM_TARGET_ACTIVITY = Class.forName(extras.getString("target_activity",null)) as Class<out Activity?>?
     }
 }

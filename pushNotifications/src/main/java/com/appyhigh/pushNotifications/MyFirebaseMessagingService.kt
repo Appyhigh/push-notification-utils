@@ -3,6 +3,7 @@ import android.app.*
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -23,6 +24,7 @@ import com.clevertap.android.sdk.InAppNotificationButtonListener
 import com.google.android.play.core.review.ReviewInfo
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.google.android.play.core.tasks.Task
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import java.net.HttpURLConnection
@@ -53,7 +55,24 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     private var inAppWebViewActivityToOpen: Class<out Activity?>? = null
     private var inAppActivityToOpen: Class<out Activity?>? = null
     private lateinit var inAppIntentParam: String
+    private lateinit var appName: String
 
+
+    fun addTopics(context: Context, appName: String, isDebug: Boolean){
+        if(appName.equals("")){
+            getAppName(context)
+        }
+        else {
+            this.appName = appName
+        }
+        if(isDebug){
+            firebaseSubscribeToTopic(appName + "Debug")
+        }
+        else{
+            firebaseSubscribeToTopic(appName)
+            firebaseSubscribeToTopic(appName+"-"+Locale.getDefault().getCountry()+"-"+Locale.getDefault().getLanguage())
+        }
+    }
 
     override fun onMessageSent(s: String) {
         super.onMessageSent(s)
@@ -64,6 +83,37 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         super.onSendError(s, e)
         Log.d(TAG, "onSendError: $e")
     }
+
+    fun getAppName(context: Context) {
+        val applicationInfo = context.applicationInfo
+        val stringId = applicationInfo.labelRes
+        if (stringId == 0) {
+            appName = applicationInfo.nonLocalizedLabel.toString()
+        }
+        else {
+            appName = context.getString(stringId)
+        }
+        appName = appName.replace("\\s".toRegex(), "")
+        appName = appName.toLowerCase()
+    }
+
+    fun firebaseSubscribeToTopic(appName: String){
+        try{
+            FirebaseMessaging.getInstance().subscribeToTopic(appName)
+                .addOnCompleteListener { task ->
+                    var msg = "subscribed to $appName"
+                    if (!task.isSuccessful) {
+                        msg = "not subscribed to $appName"
+                    }
+
+                    Log.d(TAG, msg)
+                }
+        }catch (e: Exception){
+            e.printStackTrace()
+            Log.d(TAG, "firebaseSubscribeToTopic: "+e)
+        }
+    }
+
 
     override fun onNewToken(s: String) {
         super.onNewToken(s)
@@ -100,8 +150,24 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     extras.putString(key, value)
                 }
                 val notificationType = extras.getString("notificationType")
-                FCM_ICON = extras.getInt("small_icon", FCM_ICON)
-                FCM_TARGET_ACTIVITY = Class.forName(extras.getString("target_activity", null)) as Class<out Activity?>?
+
+                packageManager.getApplicationInfo(packageName,PackageManager.GET_META_DATA).apply {
+                    // setting the small icon for notification
+                    if(metaData.containsKey("FCM_ICON")){
+                        Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_ICON"))
+                        FCM_ICON = metaData.getInt("FCM_ICON")
+                    }
+                    //getting and setting the target activity that is to be opened on notification click
+                    if(extras.containsKey("target_activity")){
+                        FCM_TARGET_ACTIVITY = Class.forName(extras.getString("target_activity", "")) as Class<out Activity?>?
+                    }
+                    else if(FCM_TARGET_ACTIVITY == null) {
+                        Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_ACTIVITY"))
+                        FCM_TARGET_ACTIVITY = Class.forName(
+                            metaData.get("FCM_TARGET_ACTIVITY").toString()
+                        ) as Class<out Activity?>?
+                    }
+                }
                 val info = CleverTapAPI.getNotificationInfo(extras)
                 if (info.fromCleverTap) {
                     if (extras.getString("nm") != "" || extras.getString("nm") != null
@@ -164,10 +230,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
     private fun sendNotification(extras: Bundle) {
         try {
-            Log.d(TAG, "onMessageReceived: in else part 2")
             var message = extras.getString("message")
             var image = getBitmapfromUrl(extras.getString("image"))
-            var link = extras.getString("link")
+            var url = extras.getString("url")
             var which = extras.getString("which")
             var title = extras.getString("title")
             if(message==null || message.equals("")){
@@ -183,7 +248,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.putExtra("which", which)
-            intent.putExtra("link", link)
+            intent.putExtra("url", url)
             intent.putExtra("title", title)
             val pendingIntent = PendingIntent.getActivity(
                 applicationContext,
@@ -192,8 +257,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            Log.d(TAG, "onMessageReceived: in else part 3")
-            Log.d(TAG, "sendNotification: " + title + " " + message)
             val notificationBuilder: NotificationCompat.Builder =
                 NotificationCompat.Builder(applicationContext)
                     .setLargeIcon(image) /*Notification icon image*/
@@ -591,8 +654,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         try {
             val rating: Int = intent.getIntExtra("rating", 0)
             Log.i("Result", "Got the data " + intent.getIntExtra("rating", 0))
+            var showWhich = true
             if (intent.hasExtra("rating")) {
                 if (rating == 5) {
+                    showWhich = false
                     val manager = ReviewManagerFactory.create(context)
                     val request = manager.requestReviewFlow()
                     request.addOnCompleteListener { task: Task<ReviewInfo?> ->
@@ -615,9 +680,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 }
             }
 
-            if (intent.hasExtra("which")) {
+            if (intent.hasExtra("which") && showWhich) {
                 val which = intent.getStringExtra("which")
-                val url = intent.getStringExtra("link")
+                val url = intent.getStringExtra("url")
                 val title = intent.getStringExtra("title")
 
                 when (which) {
@@ -655,8 +720,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     "L" -> {
                         try {
                             val intent1 = Intent(context, webViewActivityToOpen)
-                            intent1.putExtra("link", url)
+                            intent1.putExtra("url", url)
                             intent1.putExtra("title", title)
+                            intent1.putExtra("which", which)
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -666,6 +732,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                         try {
                             val intent1 = Intent(context, activityToOpen)
                             intent1.putExtra(intentParam, url)
+                            intent1.putExtra("url", url)
+                            intent1.putExtra("title", title)
+                            intent1.putExtra("which", which)
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -754,7 +823,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         try {
             if (extras.containsKey("which")) {
                 val which = extras.getString("which")
-                val url = extras.getString("link")
+                val url = extras.getString("url")
                 val title = extras.getString("title")
 
                 when (which) {
@@ -792,8 +861,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     "L" -> {
                         try {
                             val intent1 = Intent(context, webViewActivityToOpen)
-                            intent1.putExtra("link", url)
-                            intent1.putExtra("title", title)
+                            intent1.putExtras(extras)
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -803,6 +871,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                         try {
                             val intent1 = Intent(context, activityToOpen)
                             intent1.putExtra(intentParam, url)
+                            intent1.putExtras(extras)
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
