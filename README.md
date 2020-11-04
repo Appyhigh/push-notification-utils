@@ -27,7 +27,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation 'com.github.Appyhigh:appyhigh-utils:1.0.3'
+implementation 'com.github.Appyhigh:appyhigh-utils:1.0.4'
 implementation 'com.clevertap.android:clevertap-android-sdk:3.9.1' (#Recommended latest version)
 ```
 **Note:** Even though you are not using cleverTap, you must include the cleverTap library
@@ -90,10 +90,10 @@ FCM_ICON - notification icon that needs be displayed in the push notification
 [(Back to top)](#table-of-contents)
 
 We have 4 types of push notifications P, B, L and D which are identified by the which parameter.
-- P type notifications must open the play store. ("url": "com.appyhigh")
-- B type notifications must open the default browser. ("url": "https://youtube.com")
-- L type notifications must open the webview within the app. ("url": "https://youtube.com")
-- D type notification must open a specific page within the app. ("url": "AppName://ACTIVITYNAME")
+- P type notifications must open the play store. ("link": "com.appyhigh")
+- B type notifications must open the default browser. ("link": "https://youtube.com")
+- L type notifications must open the webview within the app. ("link": "https://youtube.com")
+- D type notification must open a specific page within the app. ("link": "AppName://ACTIVITYNAME")
 
 ## Basic Template
 
@@ -109,7 +109,7 @@ Basic Template Keys | Required | Description
  messageBody | Optional | Message line when Notification is expanded
  image | Optional | Image in url
  which | Optional | Value - `P`/`B`/`L`/`D`
- url | Required if 'which' is entered | url for 'which' type
+ link | Required if 'which' is entered | url for 'which' type
  
 
 
@@ -127,7 +127,7 @@ Rating Template Keys | Required | Description
  messageBody | Optional | Message line when Notification is expanded
  image | Required | Image in url
  which | Optional | Value - `P`/`B`/`L`/`D`
- url | Required if 'which' is entered | url for 'which' type
+ link | Required if 'which' is entered | url for 'which' type
  title_clr | Optional | Title Color in HEX (default - #A6A6A6)
  message_clr | Optional | Message Color in HEX (default - #A6A6A6)
  
@@ -149,7 +149,7 @@ Zero Bezel Template Keys | Required | Description
  messageBody | Optional | Message line when Notification is expanded
  image | Required | Image in url
  which | Optional | Value - `P`/`B`/`L`/`D`
- url | Required if 'which' is entered | url for 'which' type
+ link | Required if 'which' is entered | url for 'which' type
  meta_clr | Optional | Color for appname,timestamp in HEX (default - #A6A6A6)
  title_clr | Optional | Title Color in HEX (default - ##000000)
  message_clr | Optional | Message Color in HEX (default - #000000)
@@ -170,7 +170,7 @@ Zero Bezel Template Keys | Required | Description
  messageBody | Optional | Message line when Notification is expanded
  image | Required | Image in url
  which | Optional | Value - `P`/`B`/`L`/`D`
- url | Required if 'which' is entered | url for 'which' type
+ link | Required if 'which' is entered | url for 'which' type
  meta_clr | Optional | Color for appname,timestamp in HEX (default - #A6A6A6)
  title_clr | Optional | Title Color in HEX (default - ##000000)
  message_clr | Optional | Message Color in HEX (default - #000000)
@@ -187,7 +187,7 @@ Zero Bezel Template Keys | Required | Description
     "title": "Krissh 3",
     "message": "See hritiks best action super hero movie only on liveTv",
     "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
-    "url": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
     "which": "L"
   }
 }
@@ -261,7 +261,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.0.3'
+implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.0.4'
 
 ```
 
@@ -305,10 +305,10 @@ implementation 'androidx.fragment:fragment:1.1.0'
 ```
 
 We have 4 types of InApp notifications P, B, L and D which are identified by the which parameter.
-- P type notifications must open the play store. ("url": "com.appyhigh")
-- B type notifications must open the default browser. ("url": "https://youtube.com")
-- L type notifications must open the webview within the app. ("url": "https://youtube.com")
-- D type notification must open a specific page within the app. ("url": "AppName://ACTIVITYNAME")
+- P type notifications must open the play store. ("link": "com.appyhigh")
+- B type notifications must open the default browser. ("link": "https://youtube.com")
+- L type notifications must open the webview within the app. ("link": "https://youtube.com")
+- D type notification must open a specific page within the app. ("link": "AppName://ACTIVITYNAME")
 
 # Firebase
 

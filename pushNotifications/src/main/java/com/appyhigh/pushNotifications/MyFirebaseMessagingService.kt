@@ -232,7 +232,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         try {
             var message = extras.getString("message")
             var image = getBitmapfromUrl(extras.getString("image"))
-            var url = extras.getString("url")
+            var url = extras.getString("link")
             var which = extras.getString("which")
             var title = extras.getString("title")
             if(message==null || message.equals("")){
@@ -248,7 +248,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.putExtra("which", which)
-            intent.putExtra("url", url)
+            intent.putExtra("link", url)
             intent.putExtra("title", title)
             val pendingIntent = PendingIntent.getActivity(
                 applicationContext,
@@ -657,22 +657,32 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             var showWhich = true
             if (intent.hasExtra("rating")) {
                 if (rating == 5) {
+                    val url = intent.getStringExtra("link")
                     showWhich = false
-                    val manager = ReviewManagerFactory.create(context)
-                    val request = manager.requestReviewFlow()
-                    request.addOnCompleteListener { task: Task<ReviewInfo?> ->
-                        if (task.isSuccessful) {
-                            // We can get the ReviewInfo object
-                            val reviewInfo = task.result
-                            val myActivity: Activity = context as Activity
-                            val flow = manager.launchReviewFlow(myActivity, reviewInfo)
-                            flow.addOnCompleteListener { taask: Task<Void?>? ->
-                                Log.d("main", "inAppreview: completed")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        val manager = ReviewManagerFactory.create(context)
+                        val request = manager.requestReviewFlow()
+                        request.addOnCompleteListener { task: Task<ReviewInfo?> ->
+                            if (task.isSuccessful) {
+                                // We can get the ReviewInfo object
+                                val reviewInfo = task.result
+                                val myActivity: Activity = context as Activity
+                                val flow = manager.launchReviewFlow(myActivity, reviewInfo)
+                                flow.addOnCompleteListener { taask: Task<Void?>? ->
+                                    Log.d("main", "inAppreview: completed")
+                                }
+                            } else {
+                                // There was some problem, continue regardless of the result.
+                                Log.d("inAppreview", "checkForNotis: failed")
                             }
-                        } else {
-                            // There was some problem, continue regardless of the result.
-                            Log.d("inAppreview", "checkForNotis: failed")
                         }
+                    }else{
+                        val intent1 = Intent(
+                            Intent.ACTION_VIEW, Uri.parse(
+                                "https://play.google.com/store/apps/details?id=$url"
+                            )
+                        )
+                        context.startActivity(intent1)
                     }
                 } else if (rating > 0) {
                     Toast.makeText(context, "Thanks for your feedback :)", Toast.LENGTH_SHORT)
@@ -682,7 +692,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
             if (intent.hasExtra("which") && showWhich) {
                 val which = intent.getStringExtra("which")
-                val url = intent.getStringExtra("url")
+                val url = intent.getStringExtra("link")
                 val title = intent.getStringExtra("title")
 
                 when (which) {
@@ -720,7 +730,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     "L" -> {
                         try {
                             val intent1 = Intent(context, webViewActivityToOpen)
-                            intent1.putExtra("url", url)
+                            intent1.putExtra("link", url)
                             intent1.putExtra("title", title)
                             intent1.putExtra("which", which)
                             context.startActivity(intent1)
@@ -732,7 +742,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                         try {
                             val intent1 = Intent(context, activityToOpen)
                             intent1.putExtra(intentParam, url)
-                            intent1.putExtra("url", url)
+                            intent1.putExtra("link", url)
                             intent1.putExtra("title", title)
                             intent1.putExtra("which", which)
                             context.startActivity(intent1)
@@ -823,7 +833,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         try {
             if (extras.containsKey("which")) {
                 val which = extras.getString("which")
-                val url = extras.getString("url")
+                val url = extras.getString("link")
                 val title = extras.getString("title")
 
                 when (which) {
