@@ -110,8 +110,21 @@ Basic Template Keys | Required | Description
  image | Optional | Image in url
  which | Optional | Value - `P`/`B`/`L`/`D`
  link | Required if 'which' is entered | url for 'which' type
- 
 
+### Example data format to send for basic template push notifications
+
+```json
+{
+  "to": "/topics/Appname",
+  "data": {
+    "title": "Basic Template",
+    "message": "You can use this format for basic template push notifications",
+    "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "which": "L"
+  }
+}
+```
 
 ## Rating Template
 
@@ -132,6 +145,21 @@ Rating Template Keys | Required | Description
  message_clr | Optional | Message Color in HEX (default - #A6A6A6)
  
 **Note :** Maximum number of lines for message in collapsed view - 1
+
+### Example data format to send for rating template push notifications
+```json
+{
+  "to": "/topics/Appname",
+  "data": {
+    "notificationType": "R",
+    "title": "Rating Template",
+    "message": "You can use this format for rating template push notifications",
+    "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "which": "L"
+  }
+}
+```
 
 ## Bezel Template
 
@@ -156,6 +184,21 @@ Zero Bezel Template Keys | Required | Description
  pt_bg | Optional | Background Color in HEX (default - #FFFFFF)
  
  **Note :** Maximum number of lines for message in collapsed view - 2
+ 
+ ### Example data format to send for zero bezel template push notifications
+```json
+{
+  "to": "/topics/Appname",
+  "data": {
+    "notificationType": "Z",
+    "title": "Zero Bezel Template",
+    "message": "You can use this format for zero bezel template push notifications",
+    "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "which": "L"
+  }
+}
+```
 
 ### One Bezel Template
 
@@ -164,7 +207,7 @@ Zero Bezel Template Keys | Required | Description
 
  One Bezel Template Keys | Required | Description 
  ---:|:---:|:--- 
- notificationType | Required  | Value - `O`
+ notificationType | Required  | Value - `O`(Capital Letter O)
  title | Required | Title 
  message | Required | Message 
  messageBody | Optional | Message line when Notification is expanded
@@ -179,13 +222,15 @@ Zero Bezel Template Keys | Required | Description
  **Note :** Maximum number of lines for message in collapsed view - 3
  
   
-### Example data format to send for push notifications
+### Example data format to send for one bezel template push notifications
+
 ```json
 {
   "to": "/topics/Appname",
   "data": {
-    "title": "Krissh 3",
-    "message": "See hritiks best action super hero movie only on liveTv",
+    "notificationType": "O",
+    "title": "One Bezel Template",
+    "message": "You can use this format for one bezel template push notifications",
     "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
     "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
     "which": "L"
@@ -209,8 +254,13 @@ checkForNotifications(context: Context, intent: Intent, webViewActivity: Class<o
 
 2.Empty string - `""` should be given as default value for intentParam.
 
+3.You can get the url of the link from getIntent() in activity using key - 'link'.
+
+4.You can see the logs of the library using tag - 'FirebaseMessageService'
+
 ### Example
 ```Kotlin
+MyFirebaseMessagingService myFirebaseMessagingService = new MyFirebaseMessagingService();
 MyFirebaseMessaging.checkForNotifications(context = this, intent = intent, webViewActivity = WebViewActivity::class.java, activityToOpen = MainActivity::class.java,"")
 ```
 
@@ -232,6 +282,7 @@ addTopics(context: Context, appName: String, isDebug: Boolean)
 
 ### Example
 ```Kotlin
+ MyFirebaseMessagingService myFirebaseMessagingService = new MyFirebaseMessagingService();
  myFirebaseMessagingService.addTopics(context = this,appName = appName, isDebug = BuildConfig.DEBUG)
 ```
 
@@ -422,7 +473,3 @@ class MainActivity : AppCompatActivity(), InAppNotificationButtonListener {
 }
 
 ```
-
-
-
-
