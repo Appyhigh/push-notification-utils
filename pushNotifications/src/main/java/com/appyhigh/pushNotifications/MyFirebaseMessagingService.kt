@@ -70,7 +70,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         }
         else{
             firebaseSubscribeToTopic(appName)
-            firebaseSubscribeToTopic(appName+"-"+Locale.getDefault().getCountry()+"-"+Locale.getDefault().getLanguage())
+            firebaseSubscribeToTopic(
+                appName + "-" + Locale.getDefault().getCountry() + "-" + Locale.getDefault()
+                    .getLanguage()
+            )
         }
     }
 
@@ -110,7 +113,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 }
         }catch (e: Exception){
             e.printStackTrace()
-            Log.d(TAG, "firebaseSubscribeToTopic: "+e)
+            Log.d(TAG, "firebaseSubscribeToTopic: " + e)
         }
     }
 
@@ -151,7 +154,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 }
                 val notificationType = extras.getString("notificationType")
 
-                packageManager.getApplicationInfo(packageName,PackageManager.GET_META_DATA).apply {
+                packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).apply {
                     // setting the small icon for notification
                     if(metaData.containsKey("FCM_ICON")){
                         Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_ICON"))
@@ -250,6 +253,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             intent.putExtra("which", which)
             intent.putExtra("link", url)
             intent.putExtra("title", title)
+            intent.action = java.lang.Long.toString(System.currentTimeMillis())
             val pendingIntent = PendingIntent.getActivity(
                 applicationContext,
                 0 /* Request code */,
@@ -257,8 +261,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val notificationBuilder: NotificationCompat.Builder =
-                NotificationCompat.Builder(applicationContext)
+            var notificationBuilder: NotificationCompat.Builder;
+            if(image == null || image.equals("")){
+                notificationBuilder =  NotificationCompat.Builder(applicationContext)
+                    .setLargeIcon(image) /*Notification icon image*/
+                    .setSmallIcon(FCM_ICON)
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setAutoCancel(true)
+                    .setSound(defaultSoundUri)
+                    .setContentIntent(pendingIntent)
+                    .setPriority(Notification.PRIORITY_DEFAULT)
+            } else {
+                notificationBuilder =  NotificationCompat.Builder(applicationContext)
                     .setLargeIcon(image) /*Notification icon image*/
                     .setSmallIcon(FCM_ICON)
                     .setContentTitle(title)
@@ -271,6 +286,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     .setSound(defaultSoundUri)
                     .setContentIntent(pendingIntent)
                     .setPriority(Notification.PRIORITY_DEFAULT)
+            }
             val notificationManager =
                 getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -467,6 +483,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
             launchIntent.putExtras(extras)
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            launchIntent.action = java.lang.Long.toString(System.currentTimeMillis())
             val pIntent = PendingIntent.getActivity(
                 context,
                 0,
@@ -558,6 +575,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
             launchIntent.putExtras(extras)
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            launchIntent.action = java.lang.Long.toString(System.currentTimeMillis())
             val pIntent = PendingIntent.getActivity(
                 context,
                 0,

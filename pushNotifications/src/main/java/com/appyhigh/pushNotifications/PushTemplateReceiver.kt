@@ -113,6 +113,7 @@ class PushTemplateReceiver : BroadcastReceiver() {
             var launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
             launchIntent.putExtras(extras)
             launchIntent.putExtra("rating", clicked)
+            launchIntent.action = java.lang.Long.toString(System.currentTimeMillis())
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
             val pIntent = PendingIntent.getActivity(
                 context,
