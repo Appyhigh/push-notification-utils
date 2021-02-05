@@ -250,9 +250,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             val intent = Intent(applicationContext, FCM_TARGET_ACTIVITY)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.putExtra("which", which)
             intent.putExtra("link", url)
-            intent.putExtra("title", title)
+            intent.putExtras(extras);
             intent.action = java.lang.Long.toString(System.currentTimeMillis())
             val pendingIntent = PendingIntent.getActivity(
                 applicationContext,
@@ -711,8 +710,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             if (intent.hasExtra("which") && showWhich) {
                 val which = intent.getStringExtra("which")
                 val url = intent.getStringExtra("link")
-                val title = intent.getStringExtra("title")
-
+                val extras : Bundle? = intent.extras;
                 when (which) {
                     "B" -> {
                         try {
@@ -749,8 +747,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                         try {
                             val intent1 = Intent(context, webViewActivityToOpen)
                             intent1.putExtra("link", url)
-                            intent1.putExtra("title", title)
-                            intent1.putExtra("which", which)
+                            if (extras != null) {
+                                intent1.putExtras(extras)
+                            }
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -761,8 +760,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                             val intent1 = Intent(context, activityToOpen)
                             intent1.putExtra(intentParam, url)
                             intent1.putExtra("link", url)
-                            intent1.putExtra("title", title)
-                            intent1.putExtra("which", which)
+                            if (extras != null) {
+                                intent1.putExtras(extras)
+                            }
                             context.startActivity(intent1)
                         } catch (e: Exception) {
                             e.printStackTrace()
