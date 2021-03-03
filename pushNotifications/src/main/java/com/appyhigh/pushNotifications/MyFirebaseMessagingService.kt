@@ -1,4 +1,5 @@
 package com.appyhigh.pushNotifications
+
 import android.app.*
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -19,6 +20,9 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.appyhigh.pushNotifications.Constants.FCM_ICON
 import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
+import com.appyhigh.pushNotifications.apiclient.APIClient
+import com.appyhigh.pushNotifications.apiclient.APIInterface
+import com.appyhigh.pushNotifications.models.NotificationPayloadModel
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.InAppNotificationButtonListener
 import com.google.android.play.core.review.ReviewInfo
@@ -27,6 +31,12 @@ import com.google.android.play.core.tasks.Task
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.schedulers.Schedulers
+import org.json.JSONException
+import org.json.JSONObject
+import retrofit2.Retrofit
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
@@ -56,7 +66,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     private var inAppActivityToOpen: Class<out Activity?>? = null
     private lateinit var inAppIntentParam: String
     private lateinit var appName: String
-
+    private var retrofit: Retrofit? = null
+    private var apiInterface: APIInterface? = null
+    private var notificationListObservable : Observable<ArrayList<NotificationPayloadModel>>? = null
 
     fun addTopics(context: Context, appName: String, isDebug: Boolean){
         if(appName.equals("")){
@@ -153,7 +165,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     extras.putString(key, value)
                 }
                 val notificationType = extras.getString("notificationType")
-
+                val sharedPreferences = getSharedPreferences("missedNotifications", MODE_PRIVATE)
+                sharedPreferences.edit().putString(extras.getString("link","default"),extras.toString()).apply()
                 packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).apply {
                     // setting the small icon for notification
                     if(metaData.containsKey("FCM_ICON")){
@@ -192,7 +205,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                                         renderOneBezelNotification(this, extras)
                                     }
                                     else -> {
-                                        sendNotification(extras)
+                                        sendNotification(this, extras)
                                     }
                                 }
                             } else {
@@ -220,7 +233,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                         }
                         else -> {
                             Log.d(TAG, "onMessageReceived: in else part")
-                            sendNotification(extras)
+                            sendNotification(this, extras)
                         }
                     }
                 }
@@ -231,7 +244,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     }
 
 
-    private fun sendNotification(extras: Bundle) {
+    private fun sendNotification(context: Context, extras: Bundle) {
         try {
             var message = extras.getString("message")
             var image = getBitmapfromUrl(extras.getString("image"))
@@ -247,14 +260,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             Log.i("Result", "Got the data yessss")
             val rand = Random()
             val a = rand.nextInt(101) + 1
-            val intent = Intent(applicationContext, FCM_TARGET_ACTIVITY)
+            val intent = Intent(context.applicationContext, FCM_TARGET_ACTIVITY)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.putExtra("link", url)
             intent.putExtras(extras);
             intent.action = java.lang.Long.toString(System.currentTimeMillis())
             val pendingIntent = PendingIntent.getActivity(
-                applicationContext,
+                context.applicationContext,
                 0 /* Request code */,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
@@ -262,7 +275,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             var notificationBuilder: NotificationCompat.Builder;
             if(image == null || image.equals("")){
-                notificationBuilder =  NotificationCompat.Builder(applicationContext)
+                notificationBuilder =  NotificationCompat.Builder(context.applicationContext)
                     .setLargeIcon(image) /*Notification icon image*/
                     .setSmallIcon(FCM_ICON)
                     .setContentTitle(title)
@@ -272,7 +285,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     .setContentIntent(pendingIntent)
                     .setPriority(Notification.PRIORITY_DEFAULT)
             } else {
-                notificationBuilder =  NotificationCompat.Builder(applicationContext)
+                notificationBuilder =  NotificationCompat.Builder(context.applicationContext)
                     .setLargeIcon(image) /*Notification icon image*/
                     .setSmallIcon(FCM_ICON)
                     .setContentTitle(title)
@@ -287,7 +300,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     .setPriority(Notification.PRIORITY_DEFAULT)
             }
             val notificationManager =
-                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
                 val id = "messenger_general"
@@ -346,7 +359,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
 
 
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val id = "messenger_general"
             val name = "General"
             val description = "General Notifications sent by the app"
@@ -505,7 +518,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 //
 //            setCustomContentViewDotSep(contentViewBig);
 //            setCustomContentViewDotSep(contentViewSmall);
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val id = "messenger_general"
             val name = "General"
             val description = "General Notifications sent by the app"
@@ -597,7 +610,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 //
 //            setCustomContentViewDotSep(contentViewBig);
 //            setCustomContentViewDotSep(contentViewSmall);
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             val id = "messenger_general"
             val name = "General"
             val description = "General Notifications sent by the app"
@@ -647,17 +660,117 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
      *To get a Bitmap image from the URL received
      * */
     fun getBitmapfromUrl(imageUrl: String?): Bitmap? {
-        return try {
-            val url = URL(imageUrl)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.doInput = true
-            connection.connect()
-            val input = connection.inputStream
-            BitmapFactory.decodeStream(input)
+        var bitmap:Bitmap? = null
+        try {
+            val t:Thread = Thread{
+                val url = URL(imageUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.connect()
+                val input = connection.inputStream
+                bitmap = BitmapFactory.decodeStream(input)
+            }
+            t.start()
+            t.join()
+            return bitmap
         } catch (e: Exception) {
             Log.d(TAG, "getBitmapfromUrl: $e")
-            null
+            return bitmap
         }
+    }
+
+
+    fun fetchNotifications(context: Context) {
+        try {
+            Log.d(TAG, "fetchNotifications: called " + context.packageName)
+            retrofit = APIClient.getClient()
+            apiInterface = retrofit?.create(APIInterface::class.java)
+            getAppName(context)
+            notificationListObservable = apiInterface?.getNotifications(context.packageName)
+            notificationListObservable?.subscribeOn(Schedulers.newThread())!!.observeOn(
+                AndroidSchedulers.mainThread()
+            )?.subscribe(
+                {
+                    setNotificationData(it, context)
+                },
+                {
+                    Log.d(TAG, "fetchNotifications error: " + it.message)
+                })
+        } catch (e: Exception) {
+            Log.d(TAG, "fetchNotifications: catch message " + e.message)
+            e.printStackTrace()
+        }
+
+    }
+
+    fun setNotificationData(notificationList: ArrayList<NotificationPayloadModel>, context: Context){
+        try {
+            Log.d(TAG, "setNotificationData: called")
+            val sharedPreferences = context.getSharedPreferences("missedNotifications", MODE_PRIVATE)
+            for (notificationObject: NotificationPayloadModel in notificationList) {
+                if(sharedPreferences.contains(notificationObject.id)){
+                    continue
+                }
+                val extras = jsonToBundle(JSONObject(notificationObject.data))
+                context.packageManager.getApplicationInfo(
+                    context.packageName,
+                    PackageManager.GET_META_DATA
+                ).apply {
+                    // setting the small icon for notification
+                    if (metaData.containsKey("FCM_ICON")) {
+                        Log.d(TAG, "FCM_ICON: " + metaData.get("FCM_ICON"))
+                        FCM_ICON = metaData.getInt("FCM_ICON")
+                    }
+                    //getting and setting the target activity that is to be opened on notification click
+                    if (extras.containsKey("target_activity")) {
+                        FCM_TARGET_ACTIVITY = Class.forName(
+                            extras.getString(
+                                "target_activity",
+                                ""
+                            )
+                        ) as Class<out Activity?>?
+                    } else if (FCM_TARGET_ACTIVITY == null) {
+                        FCM_TARGET_ACTIVITY = Class.forName(
+                            metaData.get("FCM_TARGET_ACTIVITY").toString()
+                        ) as Class<out Activity?>?
+                    }
+                }
+                setUp(context, extras)
+                when (extras.getString("notificationType","")) {
+                    "R" -> {
+                        setUp(context, extras)
+                        renderRatingNotification(context, extras)
+                    }
+                    "Z" -> {
+                        setUp(context, extras)
+                        renderZeroBezelNotification(context, extras)
+                    }
+                    "O" -> {
+                        setUp(context, extras)
+                        renderOneBezelNotification(context, extras)
+                    }
+                    else -> {
+                        Log.d(TAG, "onMessageReceived: in else part")
+                        sendNotification(context, extras)
+                    }
+                }
+                sharedPreferences.edit().putString(notificationObject.id,notificationObject.data).apply()
+            }
+        } catch (e: Exception){
+            Log.d(TAG, "setNotificationData: catch " + e.message)
+            e.printStackTrace()
+        }
+    }
+
+    fun jsonToBundle(jsonObject: JSONObject): Bundle {
+        val bundle = Bundle()
+        val iter: Iterator<*> = jsonObject.keys()
+        while (iter.hasNext()) {
+            val key = iter.next() as String
+            val value = jsonObject.getString(key)
+            bundle.putString(key, value)
+        }
+        return bundle
     }
 
     fun checkForNotifications(
@@ -669,6 +782,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     )
     {
         try {
+            if(!intent.hasExtra("rating") && !intent.hasExtra("which")){
+                fetchNotifications(context)
+            }
             val rating: Int = intent.getIntExtra("rating", 0)
             Log.i("Result", "Got the data " + intent.getIntExtra("rating", 0))
             var showWhich = true
@@ -709,7 +825,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
             if (intent.hasExtra("which") && showWhich) {
                 val which = intent.getStringExtra("which")
-                val url = intent.getStringExtra("link")
+                var url = ""
+                if(intent.hasExtra("link")){
+                    url = intent.getStringExtra("link")!!
+                } else if(intent.hasExtra("url")) {
+                    url = intent.getStringExtra("url")!!
+                }
                 val extras : Bundle? = intent.extras;
                 when (which) {
                     "B" -> {
@@ -911,7 +1032,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "checkForInAppNotifications: \$e")
+            Log.e(TAG, "checkForInAppNotifications: $e")
 //                Dont push
         }
     }
