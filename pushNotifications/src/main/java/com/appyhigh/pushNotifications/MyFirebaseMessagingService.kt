@@ -14,7 +14,9 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
+import android.util.Patterns
 import android.view.View
+import android.webkit.URLUtil
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -34,10 +36,10 @@ import com.google.firebase.messaging.RemoteMessage
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
-import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Retrofit
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
 
@@ -166,7 +168,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 }
                 val notificationType = extras.getString("notificationType")
                 val sharedPreferences = getSharedPreferences("missedNotifications", MODE_PRIVATE)
-                sharedPreferences.edit().putString(extras.getString("link","default"),extras.toString()).apply()
+                sharedPreferences.edit().putString(
+                    extras.getString("link", "default"),
+                    extras.toString()
+                ).apply()
                 packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).apply {
                     // setting the small icon for notification
                     if(metaData.containsKey("FCM_ICON")){
@@ -661,6 +666,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     }
 
 
+    fun isValidUrl(urlString: String?): Boolean {
+        try {
+            val url = URL(urlString)
+            return URLUtil.isValidUrl(urlString) && Patterns.WEB_URL.matcher(urlString).matches()
+        } catch (ignored: MalformedURLException) {
+        }
+        return false
+    }
 
 
     /*
@@ -668,7 +681,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
      * */
     fun getBitmapfromUrl(imageUrl: String?): Bitmap? {
         var bitmap:Bitmap? = null
-        if(image == null || image.equals("")){
+        if(image == null || image.equals("") || !isValidUrl(imageUrl)){
             return bitmap;
         }
         try {
@@ -716,7 +729,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     fun setNotificationData(notificationList: ArrayList<NotificationPayloadModel>, context: Context){
         try {
             Log.d(TAG, "setNotificationData: called")
-            val sharedPreferences = context.getSharedPreferences("missedNotifications", MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences(
+                "missedNotifications",
+                MODE_PRIVATE
+            )
             for (notificationObject: NotificationPayloadModel in notificationList) {
                 if(sharedPreferences.contains(notificationObject.id)){
                     continue
@@ -746,7 +762,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     }
                 }
                 setUp(context, extras)
-                when (extras.getString("notificationType","")) {
+                when (extras.getString("notificationType", "")) {
                     "R" -> {
                         setUp(context, extras)
                         renderRatingNotification(context, extras)
@@ -764,7 +780,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                         sendNotification(context, extras)
                     }
                 }
-                sharedPreferences.edit().putString(notificationObject.id,notificationObject.data).apply()
+                sharedPreferences.edit().putString(notificationObject.id, notificationObject.data).apply()
             }
         } catch (e: Exception){
             Log.d(TAG, "setNotificationData: catch " + e.message)

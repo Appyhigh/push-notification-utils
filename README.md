@@ -27,7 +27,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation 'com.github.Appyhigh:appyhigh-utils:1.0.8'
+implementation 'com.github.Appyhigh:appyhigh-utils:1.0.9'
 implementation 'com.clevertap.android:clevertap-android-sdk:3.9.1' (#Recommended latest version)
 ```
 **Note:** Even though you are not using cleverTap, you must include the cleverTap library
@@ -312,7 +312,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.0.8'
+implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.0.9'
 
 ```
 
