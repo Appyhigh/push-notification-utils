@@ -273,52 +273,53 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            var notificationBuilder: NotificationCompat.Builder;
-            if(image == null || image.equals("")){
-                notificationBuilder =  NotificationCompat.Builder(context.applicationContext)
-                    .setLargeIcon(image) /*Notification icon image*/
-                    .setSmallIcon(FCM_ICON)
-                    .setContentTitle(title)
-                    .setContentText(message)
-                    .setAutoCancel(true)
-                    .setSound(defaultSoundUri)
-                    .setContentIntent(pendingIntent)
-                    .setPriority(Notification.PRIORITY_DEFAULT)
-            } else {
-                notificationBuilder =  NotificationCompat.Builder(context.applicationContext)
-                    .setLargeIcon(image) /*Notification icon image*/
-                    .setSmallIcon(FCM_ICON)
-                    .setContentTitle(title)
-                    .setContentText(message)
-                    .setStyle(
-                        NotificationCompat.BigPictureStyle()
-                            .bigPicture(image)
-                    ) /*Notification with Image*/
-                    .setAutoCancel(true)
-                    .setSound(defaultSoundUri)
-                    .setContentIntent(pendingIntent)
-                    .setPriority(Notification.PRIORITY_DEFAULT)
-            }
-            val notificationManager =
-                context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // The id of the channel.
-                val id = "messenger_general"
-                val name: CharSequence = "General"
-                val description = "General Notifications sent by the app"
-                val importance = NotificationManager.IMPORTANCE_HIGH
-                val mChannel = NotificationChannel(id, name, importance)
-                mChannel.description = description
-                mChannel.enableLights(true)
-                mChannel.lightColor = Color.BLUE
-                mChannel.enableVibration(true)
-                notificationManager.createNotificationChannel(mChannel)
-                notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
-            } else {
-                notificationManager.notify(
-                    a + 1 /* ID of notification */,
-                    notificationBuilder.build()
-                )
+            if(title!=null && message!=null) {
+                var notificationBuilder: NotificationCompat.Builder;
+                if (image == null || image.equals("")) {
+                    notificationBuilder = NotificationCompat.Builder(context.applicationContext)
+                        .setSmallIcon(FCM_ICON)
+                        .setContentTitle(title)
+                        .setContentText(message)
+                        .setAutoCancel(true)
+                        .setSound(defaultSoundUri)
+                        .setContentIntent(pendingIntent)
+                        .setPriority(Notification.PRIORITY_DEFAULT)
+                } else {
+                    notificationBuilder = NotificationCompat.Builder(context.applicationContext)
+                        .setLargeIcon(image) /*Notification icon image*/
+                        .setSmallIcon(FCM_ICON)
+                        .setContentTitle(title)
+                        .setContentText(message)
+                        .setStyle(
+                            NotificationCompat.BigPictureStyle()
+                                .bigPicture(image)
+                        ) /*Notification with Image*/
+                        .setAutoCancel(true)
+                        .setSound(defaultSoundUri)
+                        .setContentIntent(pendingIntent)
+                        .setPriority(Notification.PRIORITY_DEFAULT)
+                }
+                val notificationManager =
+                    context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // The id of the channel.
+                    val id = "messenger_general"
+                    val name: CharSequence = "General"
+                    val description = "General Notifications sent by the app"
+                    val importance = NotificationManager.IMPORTANCE_HIGH
+                    val mChannel = NotificationChannel(id, name, importance)
+                    mChannel.description = description
+                    mChannel.enableLights(true)
+                    mChannel.lightColor = Color.BLUE
+                    mChannel.enableVibration(true)
+                    notificationManager.createNotificationChannel(mChannel)
+                    notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                } else {
+                    notificationManager.notify(
+                        a + 1 /* ID of notification */,
+                        notificationBuilder.build()
+                    )
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -354,9 +355,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
 //            setCustomContentViewBigImage(contentViewRating, image);
             bitmapImage = getBitmapfromUrl(image)
-            contentViewRating!!.setImageViewBitmap(R.id.big_image, bitmapImage)
-            //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
-            contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+            if(bitmapImage!=null) {
+                contentViewRating!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
+                contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+            }
 
 
             val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -503,9 +506,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
             bitmapImage = getBitmapfromUrl(image)
-            contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+            if(bitmapImage!=null) {
+                contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
 
-            contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+            }
 
             contentViewSmall!!.setImageViewResource(
                 R.id.small_icon,
@@ -595,8 +600,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
             bitmapImage = getBitmapfromUrl(image)
-            contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
-            contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+            if(bitmapImage!=null) {
+                contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+            }
 
 
             contentViewSmall!!.setImageViewResource(
@@ -661,6 +668,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
      * */
     fun getBitmapfromUrl(imageUrl: String?): Bitmap? {
         var bitmap:Bitmap? = null
+        if(image == null || image.equals("")){
+            return bitmap;
+        }
         try {
             val t:Thread = Thread{
                 val url = URL(imageUrl)
