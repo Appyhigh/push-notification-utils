@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
@@ -25,6 +26,9 @@ import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.InAppNotificationButtonListener
 import com.google.android.play.core.review.ReviewInfo
@@ -33,10 +37,10 @@ import com.google.android.play.core.tasks.Task
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.schedulers.Schedulers
 import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
@@ -70,7 +74,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     private lateinit var appName: String
     private var retrofit: Retrofit? = null
     private var apiInterface: APIInterface? = null
-    private var notificationListObservable : Observable<ArrayList<NotificationPayloadModel>>? = null
 
     fun addTopics(context: Context, appName: String, isDebug: Boolean){
         if(appName.equals("")){
@@ -252,7 +255,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     private fun sendNotification(context: Context, extras: Bundle) {
         try {
             var message = extras.getString("message")
-            var image = getBitmapfromUrl(extras.getString("image"))
+            var image = getBitmapfromUrl(extras.getString("image"), context)
             var url = extras.getString("link")
             var which = extras.getString("which")
             var title = extras.getString("title")
@@ -359,7 +362,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
 
 //            setCustomContentViewBigImage(contentViewRating, image);
-            bitmapImage = getBitmapfromUrl(image)
+            bitmapImage = getBitmapfromUrl(image, context)
             if(bitmapImage!=null) {
                 contentViewRating!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                 //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
@@ -510,7 +513,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 launchIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
-            bitmapImage = getBitmapfromUrl(image)
+            bitmapImage = getBitmapfromUrl(image, context)
             if(bitmapImage!=null) {
                 contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
 
@@ -604,7 +607,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                 launchIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
-            bitmapImage = getBitmapfromUrl(image)
+            bitmapImage = getBitmapfromUrl(image, context)
             if(bitmapImage!=null) {
                 contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                 contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
@@ -679,19 +682,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     /*
      *To get a Bitmap image from the URL received
      * */
-    fun getBitmapfromUrl(imageUrl: String?): Bitmap? {
+    fun getBitmapfromUrl(imageUrl: String?, context: Context): Bitmap? {
         var bitmap:Bitmap? = null
         if(image == null || image.equals("") || !isValidUrl(imageUrl)){
-            return bitmap;
+            return bitmap
         }
         try {
             val t:Thread = Thread{
-                val url = URL(imageUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.doInput = true
-                connection.connect()
-                val input = connection.inputStream
-                bitmap = BitmapFactory.decodeStream(input)
+                try {
+                    val url = URL(imageUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.doInput = true
+                    connection.connect()
+                    val input = connection.inputStream
+                    bitmap = BitmapFactory.decodeStream(input)
+                } catch (e: Exception) {
+                    Log.d(TAG, "getBitmapfromUrl inside: $e")
+                }
             }
             t.start()
             t.join()
@@ -709,16 +716,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             retrofit = APIClient.getClient()
             apiInterface = retrofit?.create(APIInterface::class.java)
             getAppName(context)
-            notificationListObservable = apiInterface?.getNotifications(context.packageName)
-            notificationListObservable?.subscribeOn(Schedulers.newThread())!!.observeOn(
-                AndroidSchedulers.mainThread()
-            )?.subscribe(
-                {
-                    setNotificationData(it, context)
-                },
-                {
-                    Log.d(TAG, "fetchNotifications error: " + it.message)
-                })
+            apiInterface!!.getNotifications(context.packageName).enqueue(object :
+                Callback<ArrayList<NotificationPayloadModel>> {
+                override fun onResponse(
+                    call: Call<ArrayList<NotificationPayloadModel>>,
+                    response: Response<ArrayList<NotificationPayloadModel>>
+                ) {
+                    setNotificationData(response.body()!!, context)
+                }
+
+                override fun onFailure(
+                    call: Call<ArrayList<NotificationPayloadModel>>,
+                    t: Throwable
+                ) {
+                    Log.d(TAG, "fetchNotifications error: " + t.message)
+                }
+
+            })
         } catch (e: Exception) {
             Log.d(TAG, "fetchNotifications: catch message " + e.message)
             e.printStackTrace()
