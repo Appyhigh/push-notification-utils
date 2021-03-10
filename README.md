@@ -27,8 +27,8 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation 'com.github.Appyhigh:appyhigh-utils:1.0.9'
-implementation 'com.clevertap.android:clevertap-android-sdk:3.9.1' (#Recommended latest version)
+implementation 'com.github.Appyhigh:appyhigh-utils:1.1.0'
+implementation 'com.clevertap.android:clevertap-android-sdk:4.0.4' (#Recommended latest version)
 ```
 **Note:** Even though you are not using cleverTap, you must include the cleverTap library
 
@@ -312,7 +312,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.0.9'
+implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.1.0'
 
 ```
 
@@ -323,7 +323,7 @@ implementation 'com.google.firebase:firebase-inappmessaging-display:19.1.1' (#Re
 
 4.If you are using **CleverTap** for InApp Notifications, then add the following lines to your app level *build.gradle* file.
 ```groovy
-implementation 'com.clevertap.android:clevertap-android-sdk:3.7.2' (#Recommended latest version)
+implementation 'com.clevertap.android:clevertap-android-sdk:4.0.4' (#Recommended latest version)
 implementation 'androidx.fragment:fragment:1.1.0'
 ```
 
