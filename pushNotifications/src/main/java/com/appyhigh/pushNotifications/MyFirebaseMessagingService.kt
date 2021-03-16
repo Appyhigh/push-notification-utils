@@ -1,5 +1,6 @@
 package com.appyhigh.pushNotifications
 
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -8,11 +9,9 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.media.RingtoneManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
+import android.os.*
 import android.text.Html
 import android.util.Log
 import android.util.Patterns
@@ -26,9 +25,6 @@ import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.InAppNotificationButtonListener
 import com.google.android.play.core.review.ReviewInfo
@@ -688,20 +684,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
             return bitmap
         }
         try {
-            val t:Thread = Thread{
-                try {
-                    val url = URL(imageUrl)
-                    val connection = url.openConnection() as HttpURLConnection
-                    connection.doInput = true
-                    connection.connect()
-                    val input = connection.inputStream
-                    bitmap = BitmapFactory.decodeStream(input)
-                } catch (e: Exception) {
-                    Log.d(TAG, "getBitmapfromUrl inside: $e")
-                }
-            }
-            t.start()
-            t.join()
+            val url = URL(imageUrl)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.doInput = true
+            connection.connect()
+            val input = connection.inputStream
+            bitmap = BitmapFactory.decodeStream(input)
             return bitmap
         } catch (e: Exception) {
             Log.d(TAG, "getBitmapfromUrl: $e")
@@ -742,63 +730,181 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
     fun setNotificationData(notificationList: ArrayList<NotificationPayloadModel>, context: Context){
         try {
-            Log.d(TAG, "setNotificationData: called")
-            val sharedPreferences = context.getSharedPreferences(
-                "missedNotifications",
-                MODE_PRIVATE
-            )
-            for (notificationObject: NotificationPayloadModel in notificationList) {
-                if(sharedPreferences.contains(notificationObject.id)){
-                    continue
+            Thread{
+                Log.d(TAG, "setNotificationData: called")
+                val sharedPreferences = context.getSharedPreferences(
+                    "missedNotifications",
+                    MODE_PRIVATE
+                )
+                for (notificationObject: NotificationPayloadModel in notificationList) {
+                    if(sharedPreferences.contains(notificationObject.id)){
+                        continue
+                    }
+                    val extras = jsonToBundle(JSONObject(notificationObject.data))
+                    context.packageManager.getApplicationInfo(
+                        context.packageName,
+                        PackageManager.GET_META_DATA
+                    ).apply {
+                        // setting the small icon for notification
+                        if (metaData.containsKey("FCM_ICON")) {
+                            Log.d(TAG, "FCM_ICON: " + metaData.get("FCM_ICON"))
+                            FCM_ICON = metaData.getInt("FCM_ICON")
+                        }
+                        //getting and setting the target activity that is to be opened on notification click
+                        if (extras.containsKey("target_activity")) {
+                            FCM_TARGET_ACTIVITY = Class.forName(
+                                extras.getString(
+                                    "target_activity",
+                                    ""
+                                )
+                            ) as Class<out Activity?>?
+                        } else if (FCM_TARGET_ACTIVITY == null) {
+                            FCM_TARGET_ACTIVITY = Class.forName(
+                                metaData.get("FCM_TARGET_ACTIVITY").toString()
+                            ) as Class<out Activity?>?
+                        }
+                    }
+                    setUp(context, extras)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        when (extras.getString("notificationType", "")) {
+                            "R" -> {
+                                setUp(context, extras)
+                                renderRatingNotification(context, extras)
+                            }
+                            "Z" -> {
+                                setUp(context, extras)
+                                renderZeroBezelNotification(context, extras)
+                            }
+                            "O" -> {
+                                setUp(context, extras)
+                                renderOneBezelNotification(context, extras)
+                            }
+                            else -> {
+                                Log.d(TAG, "onMessageReceived: in else part")
+                                generatePictureStyleNotification(context, extras).execute()
+                            }
+                        }
+                    }, 1000)
+                    sharedPreferences.edit().putString(
+                        notificationObject.id,
+                        notificationObject.data
+                    ).apply()
                 }
-                val extras = jsonToBundle(JSONObject(notificationObject.data))
-                context.packageManager.getApplicationInfo(
-                    context.packageName,
-                    PackageManager.GET_META_DATA
-                ).apply {
-                    // setting the small icon for notification
-                    if (metaData.containsKey("FCM_ICON")) {
-                        Log.d(TAG, "FCM_ICON: " + metaData.get("FCM_ICON"))
-                        FCM_ICON = metaData.getInt("FCM_ICON")
-                    }
-                    //getting and setting the target activity that is to be opened on notification click
-                    if (extras.containsKey("target_activity")) {
-                        FCM_TARGET_ACTIVITY = Class.forName(
-                            extras.getString(
-                                "target_activity",
-                                ""
-                            )
-                        ) as Class<out Activity?>?
-                    } else if (FCM_TARGET_ACTIVITY == null) {
-                        FCM_TARGET_ACTIVITY = Class.forName(
-                            metaData.get("FCM_TARGET_ACTIVITY").toString()
-                        ) as Class<out Activity?>?
-                    }
-                }
-                setUp(context, extras)
-                when (extras.getString("notificationType", "")) {
-                    "R" -> {
-                        setUp(context, extras)
-                        renderRatingNotification(context, extras)
-                    }
-                    "Z" -> {
-                        setUp(context, extras)
-                        renderZeroBezelNotification(context, extras)
-                    }
-                    "O" -> {
-                        setUp(context, extras)
-                        renderOneBezelNotification(context, extras)
-                    }
-                    else -> {
-                        Log.d(TAG, "onMessageReceived: in else part")
-                        sendNotification(context, extras)
-                    }
-                }
-                sharedPreferences.edit().putString(notificationObject.id, notificationObject.data).apply()
-            }
+            }.start()
         } catch (e: Exception){
             Log.d(TAG, "setNotificationData: catch " + e.message)
             e.printStackTrace()
+        }
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    inner class generatePictureStyleNotification(context: Context, extras: Bundle) : AsyncTask<Void, Void, Bitmap?>() {
+        private var context: Context? = null
+        private var extras: Bundle? = null
+        init {
+            this.context = context
+            this.extras = extras
+        }
+        override fun doInBackground(vararg params: Void?): Bitmap? {
+            var bitmap:Bitmap? = null
+            val imageUrl = extras!!.getString("image")
+            if(imageUrl == null || imageUrl.equals("") || !isValidUrl(imageUrl)){
+                return bitmap
+            }
+            try {
+                val url = URL(imageUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.connect()
+                val input = connection.inputStream
+                bitmap = BitmapFactory.decodeStream(input)
+                return bitmap
+            } catch (e: Exception) {
+                Log.d(TAG, "getBitmapfromUrl: $e")
+                return bitmap
+            }
+        }
+
+        override fun onPostExecute(bitmap: Bitmap?) {
+            super.onPostExecute(bitmap)
+            try {
+                var message = extras!!.getString("message")
+                var url = extras!!.getString("link")
+                var which = extras!!.getString("which")
+                var title = extras!!.getString("title")
+                if(message==null || message.equals("")){
+                    message = extras!!.getString("nm")
+                }
+                if(title==null || title.equals("")){
+                    title = extras!!.getString("nt")
+                }
+                Log.i("Result", "Got the data yessss")
+                val rand = Random()
+                val a = rand.nextInt(101) + 1
+                val intent = Intent(context!!.applicationContext, FCM_TARGET_ACTIVITY)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                intent.putExtra("link", url)
+                intent.putExtras(extras!!);
+                intent.action = java.lang.Long.toString(System.currentTimeMillis())
+                val pendingIntent = PendingIntent.getActivity(
+                    context!!.applicationContext,
+                    0 /* Request code */,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                )
+                val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                if(title!=null && message!=null) {
+                    var notificationBuilder: NotificationCompat.Builder;
+                    if (bitmap == null) {
+                        notificationBuilder = NotificationCompat.Builder(context!!.applicationContext)
+                            .setSmallIcon(FCM_ICON)
+                            .setContentTitle(title)
+                            .setContentText(message)
+                            .setAutoCancel(true)
+                            .setSound(defaultSoundUri)
+                            .setContentIntent(pendingIntent)
+                            .setPriority(Notification.PRIORITY_DEFAULT)
+                    } else {
+                        notificationBuilder = NotificationCompat.Builder(context!!.applicationContext)
+                            .setLargeIcon(bitmap) /*Notification icon image*/
+                            .setSmallIcon(FCM_ICON)
+                            .setContentTitle(title)
+                            .setContentText(message)
+                            .setStyle(
+                                NotificationCompat.BigPictureStyle()
+                                    .bigPicture(bitmap)
+                            ) /*Notification with Image*/
+                            .setAutoCancel(true)
+                            .setSound(defaultSoundUri)
+                            .setContentIntent(pendingIntent)
+                            .setPriority(Notification.PRIORITY_DEFAULT)
+                    }
+                    val notificationManager =
+                        context!!.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        // The id of the channel.
+                        val id = "messenger_general"
+                        val name: CharSequence = "General"
+                        val description = "General Notifications sent by the app"
+                        val importance = NotificationManager.IMPORTANCE_HIGH
+                        val mChannel = NotificationChannel(id, name, importance)
+                        mChannel.description = description
+                        mChannel.enableLights(true)
+                        mChannel.lightColor = Color.BLUE
+                        mChannel.enableVibration(true)
+                        notificationManager.createNotificationChannel(mChannel)
+                        notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                    } else {
+                        notificationManager.notify(
+                            a + 1 /* ID of notification */,
+                            notificationBuilder.build()
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
