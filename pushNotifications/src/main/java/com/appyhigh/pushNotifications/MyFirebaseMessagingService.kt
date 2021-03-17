@@ -710,7 +710,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
                     call: Call<ArrayList<NotificationPayloadModel>>,
                     response: Response<ArrayList<NotificationPayloadModel>>
                 ) {
-                    setNotificationData(response.body()!!, context)
+                    try {
+                        if (response.body() != null) {
+                            setNotificationData(response.body()!!, context)
+                        }
+                    } catch (e : Exception){
+                        e.printStackTrace()
+                        Log.d(TAG, "fetchNotifications error: " + e.message)
+                    }
                 }
 
                 override fun onFailure(
