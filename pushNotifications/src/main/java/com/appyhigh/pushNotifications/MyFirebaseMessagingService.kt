@@ -20,6 +20,7 @@ import android.webkit.URLUtil
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.text.HtmlCompat
 import com.appyhigh.pushNotifications.Constants.FCM_ICON
 import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
 import com.appyhigh.pushNotifications.apiclient.APIClient
@@ -250,16 +251,16 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
 
     private fun sendNotification(context: Context, extras: Bundle) {
         try {
-            var message = extras.getString("message")
+            var message = extras.getString("message")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             var image = getBitmapfromUrl(extras.getString("image"), context)
             var url = extras.getString("link")
             var which = extras.getString("which")
-            var title = extras.getString("title")
+            var title = extras.getString("title")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             if(message==null || message.equals("")){
-                message = extras!!.getString("nm")
+                message = extras!!.getString("nm")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             }
             if(title==null || title.equals("")){
-                title = extras.getString("nt")
+                title = extras.getString("nt")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             }
             Log.i("Result", "Got the data yessss")
             val rand = Random()
@@ -835,15 +836,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
         override fun onPostExecute(bitmap: Bitmap?) {
             super.onPostExecute(bitmap)
             try {
-                var message = extras!!.getString("message")
+                var message = extras!!.getString("message")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
                 var url = extras!!.getString("link")
                 var which = extras!!.getString("which")
-                var title = extras!!.getString("title")
+                var title = extras!!.getString("title")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
                 if(message==null || message.equals("")){
-                    message = extras!!.getString("nm")
+                    message = extras!!.getString("nm")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
                 }
                 if(title==null || title.equals("")){
-                    title = extras!!.getString("nt")
+                    title = extras!!.getString("nt")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
                 }
                 Log.i("Result", "Got the data yessss")
                 val rand = Random()
@@ -1330,15 +1331,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService(),InAppNotificationB
     }
 
     private fun setUp(context: Context, extras: Bundle?) {
-        message = extras!!.getString("message")
+        message = extras!!.getString("message")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         if(message==null || message.equals("")){
-            message = extras!!.getString("nm")
+            message = extras!!.getString("nm")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         }
-        messageBody = extras!!.getString("messageBody")
+        messageBody = extras!!.getString("messageBody")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         message_clr = extras!!.getString("message_clr")
-        title = extras!!.getString("title")
+        title = extras!!.getString("title")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         if(title==null || title.equals("")){
-            title = extras.getString("nt")
+            title = extras.getString("nt")?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         }
         title_clr = extras!!.getString("title_clr")
         meta_clr = extras!!.getString("meta_clr")
