@@ -226,7 +226,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                                         renderOneBezelNotification(this, extras)
                                     }
                                     "A" -> {
-                                        startService(this)
+                                        startService(this, extras)
                                     }
                                     else -> {
                                         sendNotification(this, extras)
@@ -255,7 +255,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                             renderOneBezelNotification(this, extras)
                         }
                         "A" -> {
-                            startService(this)
+                            startService(this, extras)
                         }
                         else -> {
                             Log.d(TAG, "onMessageReceived: in else part")
@@ -269,10 +269,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
         }
     }
 
-    private fun startService(context: Context) {
+    private fun startService(context: Context, extras: Bundle) {
         try {
             if (FCM_TARGET_SERVICE != null) {
                 val intent = Intent(context.applicationContext, FCM_TARGET_SERVICE)
+                intent.putExtra("bundleData", extras)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(intent)
                 } else startService(intent)
