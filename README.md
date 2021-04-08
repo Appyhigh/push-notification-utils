@@ -70,6 +70,7 @@ implementation 'com.clevertap.android:clevertap-android-sdk:4.0.4' (#Recommended
 5.Add the following lines inside *application* tag to your *AndroidManifest.xml*.
 
 ```xml
+<meta-data android:name="FCM_TARGET_SERVICE" android:value="**your_target_service with package name**" />
 <meta-data android:name="FCM_TARGET_ACTIVITY" android:value="**your_target_activity with package name**" />
 <meta-data android:name="FCM_ICON" android:resource="**your_app_icon**" />
 ```
