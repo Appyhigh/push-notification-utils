@@ -27,6 +27,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
+implementation 'com.google.firebase:firebase-messaging:21.0.1'
 implementation 'com.github.Appyhigh:appyhigh-utils:1.1.5'
 implementation 'com.clevertap.android:clevertap-android-sdk:4.0.4' (#Recommended latest version)
 ```
