@@ -228,6 +228,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                                     "A" -> {
                                         startService(this, extras)
                                     }
+                                    "imageWithHeading" -> {
+                                        setUp(this,extras)
+                                        imageWithHeading(this,extras)
+                                    }
+                                    "imageWithSubHeading" -> {
+                                        setUp(this,extras)
+                                        imageWithSubHeading(this, extras)
+                                    }
                                     else -> {
                                         sendNotification(this, extras)
                                     }
@@ -256,6 +264,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                         }
                         "A" -> {
                             startService(this, extras)
+                        }
+                        "imageWithHeading" -> {
+                            imageWithHeading(this,extras)
+                        }
+                        "imageWithSubHeading" -> {
+                            imageWithSubHeading(this, extras)
                         }
                         else -> {
                             Log.d(TAG, "onMessageReceived: in else part")
@@ -605,6 +619,197 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
             Log.d(TAG, "renderZeroBezelNotification: ")
         } catch (t: Throwable) {
             Log.d(TAG, "renderZeroBezelNotification: $t")
+        }
+    }
+
+    private fun imageWithHeading(context: Context, extras: Bundle) {
+        try {
+            contentViewBig = RemoteViews(context.packageName, R.layout.image_wt_heading)
+            contentViewBig!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+            if (meta_clr != null && !meta_clr!!.isEmpty()) {
+                contentViewBig!!.setTextColor(
+                    R.id.app_name,
+                    Utils.getColour(meta_clr, "#A6A6A6")
+                )
+            }
+            contentViewSmall = RemoteViews(context.packageName, R.layout.cv_small_one_bezel)
+
+            setCustomContentViewBasicKeys(contentViewSmall!!, context)
+            setCustomContentViewTitle(contentViewBig!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+//            setCustomContentViewMessage(contentViewBig!!, message)
+//            setCustomContentViewMessage(contentViewSmall!!, message)
+
+//            setCustomContentViewMessageSummary(contentViewBig!!, messageBody)
+            setCustomContentViewTitleColour(contentViewBig!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            setCustomContentViewExpandedBackgroundColour(contentViewBig!!, pt_bg)
+            setCustomContentViewCollapsedBackgroundColour(contentViewSmall!!, pt_bg)
+//            setCustomContentViewMessageColour(contentViewBig!!, message_clr)
+            setCustomContentViewMessageColour(contentViewSmall!!, message_clr)
+
+            val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
+            launchIntent.putExtras(extras)
+            launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            launchIntent.action = java.lang.Long.toString(System.currentTimeMillis())
+            val pIntent = PendingIntent.getActivity(
+                context,
+                0,
+                launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+            )
+            bitmapImage = getBitmapfromUrl(image, context)
+            if (bitmapImage != null) {
+                contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+            }
+
+
+            contentViewSmall!!.setImageViewResource(
+                R.id.small_icon,
+                FCM_ICON
+            )
+            contentViewBig!!.setImageViewResource(
+                R.id.small_icon,
+                FCM_ICON
+            )
+//
+//            setCustomContentViewDotSep(contentViewBig);
+//            setCustomContentViewDotSep(contentViewSmall);
+            val notificationManager =
+                context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val id = "messenger_general"
+            val name = "General"
+            val description = "General Notifications sent by the app"
+            val rand = Random()
+            val a = rand.nextInt(101) + 1
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val notificationBuilder = NotificationCompat.Builder(this, id)
+                //.setLargeIcon(image)/*Notification icon image*/
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setContentText(message)
+                //.setStyle(new NotificationCompat.BigPictureStyle()
+                //.bigPicture(image))/*Notification with Image*/
+                //.setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(contentViewSmall)
+                .setCustomBigContentView(contentViewBig)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pIntent)
+                .setPriority(Notification.PRIORITY_DEFAULT)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // The id of the channel.
+                val mChannel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
+                mChannel.description = description
+                mChannel.enableLights(true)
+                mChannel.lightColor = Color.BLUE
+                mChannel.enableVibration(true)
+                if (notificationManager != null) {
+                    notificationManager.createNotificationChannel(mChannel)
+                    notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                }
+            } else {
+                notificationManager?.notify(a + 1, notificationBuilder.build())
+            }
+            Log.d(TAG, "renderOneBezelNotification: ")
+        } catch (t: Throwable) {
+            Log.d(TAG, "renderOneBezelNotification: $t")
+        }
+    }
+
+    private fun imageWithSubHeading( context: Context, extras: Bundle){
+        try {
+            contentViewBig = RemoteViews(packageName, R.layout.image_wt_sub_heading)
+//            setCustomContentViewBasicKeys(contentViewRating!!, context)
+
+            contentViewSmall = RemoteViews(packageName, R.layout.content_view_small)
+            setCustomContentViewBasicKeys(contentViewSmall!!, context)
+            setCustomContentViewTitle(contentViewBig!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+            setCustomContentViewMessage(contentViewBig!!, message)
+            setCustomContentViewMessage(contentViewSmall!!, message)
+            setCustomContentViewMessageSummary(contentViewBig!!, messageBody)
+            setCustomContentViewTitleColour(contentViewBig!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            setCustomContentViewMessageColour(contentViewBig!!, message_clr)
+            setCustomContentViewMessageColour(contentViewSmall!!, message_clr)
+            setCustomContentViewExpandedBackgroundColour(contentViewBig!!, pt_bg)
+            setCustomContentViewCollapsedBackgroundColour(contentViewSmall!!, pt_bg)
+
+            val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
+            launchIntent.putExtras(extras)
+            launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            launchIntent.action = java.lang.Long.toString(System.currentTimeMillis())
+            val pIntent = PendingIntent.getActivity(
+                context,
+                0,
+                launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+            )
+//            setCustomContentViewBigImage(contentViewRating, image);
+            bitmapImage = getBitmapfromUrl(image, context)
+            if (bitmapImage != null) {
+                contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
+                contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
+            }
+
+            contentViewSmall!!.setImageViewResource(
+                R.id.small_icon,
+                FCM_ICON
+            )
+            contentViewBig!!.setImageViewResource(
+                R.id.small_icon,
+                FCM_ICON
+            )
+
+
+            val notificationManager =
+                context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val id = "messenger_general"
+            val name = "General"
+            val description = "General Notifications sent by the app"
+            val rand = Random()
+            val a = rand.nextInt(101) + 1
+
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+            val notificationBuilder = NotificationCompat.Builder(this, id)
+                //                    .setLargeIcon(image)/*Notification icon image*/
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setContentText(message) //                    .setStyle(new NotificationCompat.BigPictureStyle()
+                //                            .bigPicture(image))/*Notification with Image*/
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(contentViewSmall)
+                .setCustomBigContentView(contentViewBig)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pIntent)
+                .setPriority(Notification.PRIORITY_DEFAULT)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // The id of the channel.
+                val mChannel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
+                mChannel.description = description
+                mChannel.enableLights(true)
+                mChannel.lightColor = Color.BLUE
+                mChannel.enableVibration(true)
+
+                if (notificationManager != null) {
+                    notificationManager.createNotificationChannel(mChannel)
+                    notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                }
+            } else {
+                notificationManager?.notify(a + 1, notificationBuilder.build())
+            }
+            Log.d(TAG, "renderRatingNotification: ")
+
+//            Utils.raiseNotificationViewed(context, extras, config);
+        } catch (t: Throwable) {
+            Log.d(TAG, "renderRatingNotification: $t")
         }
     }
 
