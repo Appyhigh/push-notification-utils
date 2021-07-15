@@ -347,6 +347,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                         .setSmallIcon(FCM_ICON)
                         .setContentTitle(title)
                         .setContentText(message)
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(message))
                         .setAutoCancel(true)
                         .setSound(defaultSoundUri)
                         .setContentIntent(pendingIntent)
