@@ -28,7 +28,7 @@ allprojects {
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
 implementation 'com.google.firebase:firebase-messaging:21.0.1'
-implementation 'com.github.Appyhigh:appyhigh-utils:1.1.5'
+implementation 'com.github.Appyhigh:appyhigh-utils:1.1.8'
 implementation 'com.clevertap.android:clevertap-android-sdk:4.0.4' (#Recommended latest version)
 ```
 **Note:** Even though you are not using cleverTap, you must include the cleverTap library
@@ -240,6 +240,118 @@ Zero Bezel Template Keys | Required | Description
 }
 ```
 
+### Image With Heading Template
+
+<img src="https://i.postimg.cc/J40NTq2v/Screenshot-from-2021-07-01-17-14-08.png" width="300" />
+
+
+ Image With Heading Template Keys | Required | Description
+ ---:|:---:|:---
+ notificationType | Required  | Value - `imageWithHeading`
+ title | Required | Title
+ messageBody | Required | Message line when Notification is collapsed
+ image | Required | Image in url
+ which | Optional | Value - `P`/`B`/`L`/`D`
+ link | Required if 'which' is entered | url for 'which' type
+ meta_clr | Optional | Color for appname,timestamp in HEX (default - #F FFFFF)
+ title_clr | Optional | Title Color in HEX (default - ##000000)
+ message_clr | Optional | Message Color in HEX (default - #000000)
+ pt_bg | Optional | Background Color in HEX (default - #FFFFFF)
+
+ **Note :** Maximum number of lines for message in collapsed view - 2
+
+
+### Example data format to send for Image With Heading template push notifications
+
+```json
+{
+  "to": "/topics/Appname",
+  "data": {
+    "notificationType": "imageWithHeading",
+    "title": "Image With Heading Template",
+    "message": "You can use this format for Image With Heading template push notifications",
+    "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "which": "L"
+  }
+}
+```
+
+### Image With Sub Heading Template
+
+<img src="https://i.postimg.cc/htbVv5zJ/Screenshot-from-2021-07-01-17-14-56.png" width="300" />
+
+
+ Image With Sub Heading Template Keys | Required | Description
+ ---:|:---:|:---
+ notificationType | Required  | Value - `imageWithSubHeading`
+ title | Required | Title
+ message | Required | Message
+ messageBody | Required | Message line when Notification is collapsed
+ image | Required | Image in url
+ which | Optional | Value - `P`/`B`/`L`/`D`
+ link | Required if 'which' is entered | url for 'which' type
+ title_clr | Optional | Title Color in HEX (default - ##000000)
+ message_clr | Optional | Message Color in HEX (default - #000000)
+ pt_bg | Optional | Background Color in HEX (default - #FFFFFF)
+
+ **Note :** Maximum number of lines for message in collapsed view - 2
+
+
+### Example data format to send for Image With Sub Heading template push notifications
+
+```json
+{
+  "to": "/topics/Appname",
+  "data": {
+    "notificationType": "imageWithSubHeading",
+    "title": "Image With Heading Template",
+    "message": "You can use this format for Image With Heading template push notifications",
+    "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "which": "L"
+  }
+}
+```
+
+### Small Text Image Card Template
+
+<img src="https://i.postimg.cc/g2QnK9wt/Screenshot-from-2021-07-01-17-15-41.png" width="300" />
+
+
+ Small Text Image Card Template Keys | Required | Description
+ ---:|:---:|:---
+ notificationType | Required  | Value - `smallTextImageCard`
+ title | Required | Title
+ message | Required | Message
+ messageBody | Required | Message line when Notification is collapsed
+ image | Required | Image in url
+ which | Optional | Value - `P`/`B`/`L`/`D`
+ link | Required if 'which' is entered | url for 'which' type
+  meta_clr | Optional | Color for appname,timestamp in HEX (default - #000000)
+ title_clr | Optional | Title Color in HEX (default - ##000000)
+ message_clr | Optional | Message Color in HEX (default - #000000)
+ pt_bg | Optional | Background Color in HEX (default - #FFFFFF)
+
+ **Note :** Maximum number of lines for message in collapsed view - 2
+
+
+### Example data format to send for Small Text Image Card template push notifications
+
+```json
+{
+  "to": "/topics/Appname",
+  "data": {
+    "notificationType": "smallTextImageCard",
+    "title": "Image With Heading Template",
+    "message": "You can use this format for Image With Heading template push notifications",
+    "image": "https://img.youtube.com/vi/1N_zzi2ad04/hqdefault.jpg",
+    "link": "https://www.youtube.com/watch?v=ZpuY57qrZs8",
+    "which": "L"
+  }
+}
+```
+
 # Functions
 
 [(Back to top)](#table-of-contents)
@@ -314,7 +426,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.1.5'
+implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.1.8'
 
 ```
 

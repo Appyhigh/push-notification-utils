@@ -640,12 +640,20 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
             if (meta_clr != null && !meta_clr!!.isEmpty()) {
                 contentViewBig!!.setTextColor(
                     R.id.app_name,
-                    Utils.getColour(meta_clr, "#A6A6A6")
+                    Utils.getColour(meta_clr, "#FFFFFF")
                 )
             }
             contentViewSmall = RemoteViews(context.packageName, R.layout.image_wt_heading_small)
+            contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
 
-            setCustomAppContentSmall(contentViewSmall!!, context)
+            if (meta_clr != null && !meta_clr!!.isEmpty()) {
+                contentViewSmall!!.setTextColor(
+                    R.id.app_name,
+                    Utils.getColour(meta_clr, "#000000")
+                )
+            }
+
+//            setCustomAppContentSmall(contentViewSmall!!, context)
 
             setCustomContentViewTitle(contentViewBig!!, title)
             setCustomContentViewTitle(contentViewSmall!!, title)
@@ -737,7 +745,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
 //            setCustomContentViewBasicKeys(contentViewRating!!, context)
 
             contentViewSmall = RemoteViews(packageName, R.layout.image_wt_heading_small)
-            setCustomAppContentSmall(contentViewSmall!!, context)
+//            setCustomAppContentSmall(contentViewSmall!!, context)
+            contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+
+            if (meta_clr != null && !meta_clr!!.isEmpty()) {
+                contentViewSmall!!.setTextColor(
+                    R.id.app_name,
+                    Utils.getColour(meta_clr, "#000000")
+                )
+            }
 
             setCustomContentViewTitle(contentViewBig!!, title)
             setCustomContentViewTitle(contentViewSmall!!, title)
@@ -831,7 +847,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
         try {
 
             contentViewSmall = RemoteViews(packageName, R.layout.image_wt_heading_small)
-            setCustomAppContentSmall(contentViewSmall!!, context)
+//            setCustomAppContentSmall(contentViewSmall!!, context)
+            contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+
+            if (meta_clr != null && !meta_clr!!.isEmpty()) {
+                contentViewSmall!!.setTextColor(
+                    R.id.app_name,
+                    Utils.getColour(meta_clr, "#000000")
+                )
+            }
 
             setCustomContentViewTitle(contentViewSmall!!, title)
             setCustomContentViewMessage(contentViewSmall!!, message)
