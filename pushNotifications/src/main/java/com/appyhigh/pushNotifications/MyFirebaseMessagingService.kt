@@ -190,19 +190,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                             metaData.get("FCM_TARGET_ACTIVITY").toString()
                         ) as Class<out Activity?>?
                     }
-                    //getting and setting the target service that that needs to be opened
-                    if (extras.containsKey("target_service")) {
-                        FCM_TARGET_SERVICE = Class.forName(
-                            extras.getString(
-                                "target_service",
-                                ""
-                            )
-                        ) as Class<out IntentService?>?
-                    } else if (FCM_TARGET_SERVICE == null) {
-                        Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_SERVICE"))
-                        FCM_TARGET_SERVICE = Class.forName(
-                            metaData.get("FCM_TARGET_SERVICE").toString()
-                        ) as Class<out IntentService?>?
+                    try {
+                        //getting and setting the target service that that needs to be opened
+                        if (extras.containsKey("target_service")) {
+                            FCM_TARGET_SERVICE = Class.forName(
+                                extras.getString(
+                                    "target_service",
+                                    ""
+                                )
+                            ) as Class<out IntentService?>?
+                        } else if (FCM_TARGET_SERVICE == null) {
+                            Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_SERVICE"))
+                            FCM_TARGET_SERVICE = Class.forName(
+                                metaData.get("FCM_TARGET_SERVICE").toString()
+                            ) as Class<out IntentService?>?
+                        }
+                    } catch(ex: Exception){
+                        ex.printStackTrace()
                     }
                 }
                 val info = CleverTapAPI.getNotificationInfo(extras)
