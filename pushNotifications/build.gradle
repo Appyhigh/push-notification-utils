@@ -52,14 +52,8 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.2'
     implementation 'com.github.bumptech.glide:glide:4.12.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+    implementation "com.squareup.picasso:picasso:2.71828"
 
-    // Event tracking and a must have dependency for other plugins
-    implementation 'com.apxor.android:apxor-android-sdk-core:2.7.7@aar'
-
-    // Add this to track uninstalls and send push notifications from Apxor dashboard
-    implementation('com.apxor.androidx:apxor-android-sdk-push-v2:1.2.5@aar') {
-        exclude group: 'com.google.firebase'
-    }
 
 }
 
