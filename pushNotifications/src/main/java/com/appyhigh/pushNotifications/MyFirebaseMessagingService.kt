@@ -27,7 +27,6 @@ import com.appyhigh.pushNotifications.Constants.FCM_TARGET_SERVICE
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
-import com.apxor.androidsdk.plugins.push.v2.ApxorPushAPI
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.InAppNotificationButtonListener
 import com.google.android.play.core.review.ReviewInfo
@@ -36,6 +35,7 @@ import com.google.android.play.core.tasks.Task
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.squareup.picasso.Picasso
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -155,9 +155,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
         try {
             Log.d(TAG, "From: " + remoteMessage.from)
             // Check if message contains a data payload.
-            if (ApxorPushAPI.isApxorNotification(remoteMessage)) {
-                ApxorPushAPI.handleNotification(remoteMessage, applicationContext);
-            } else if (remoteMessage.data.isNotEmpty()) {
+            if (remoteMessage.data.isNotEmpty()) {
                 Log.d(TAG, "Message data payload: " + remoteMessage.data)
                 // Check if message contains a notification payload.
                 if (remoteMessage.notification != null) {
@@ -359,6 +357,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                         .setSound(defaultSoundUri)
                         .setContentIntent(pendingIntent)
                         .setPriority(Notification.PRIORITY_DEFAULT)
+                    try{
+                        val bitmap = Picasso.get().load(extras.getString("image")).get()
+                        notificationBuilder.setLargeIcon(bitmap)
+                    } catch (ex:java.lang.Exception){
+                        ex.printStackTrace()
+                    }
+
                 } else {
                     notificationBuilder = NotificationCompat.Builder(context.applicationContext)
                         .setLargeIcon(image) /*Notification icon image*/

@@ -18,12 +18,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url "https://dl.bintray.com/apxor/apxor-android"
-        }
-        maven {
-            url "https://repo.apxor.com/artifactory/list/libs-release-android/"
-        }
     }
 }
 
