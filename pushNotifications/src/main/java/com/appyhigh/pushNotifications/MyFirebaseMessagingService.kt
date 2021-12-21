@@ -212,89 +212,56 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                 }
                 val info = CleverTapAPI.getNotificationInfo(extras)
                 if (info.fromCleverTap) {
-                    if (extras.getString("nm") != "" || extras.getString("nm") != null
-                    ) {
-                        val message = extras.getString("message")
-                        if (message != null) {
-                            if (message != "") {
-                                when (notificationType) {
-                                    "R" -> {
-                                        setUp(this, extras)
-                                        renderRatingNotification(this, extras)
-                                    }
-                                    "Z" -> {
-                                        setUp(this, extras)
-                                        renderZeroBezelNotification(this, extras)
-                                    }
-                                    "O" -> {
-                                        setUp(this, extras)
-                                        renderOneBezelNotification(this, extras)
-                                    }
-                                    "A" -> {
-                                        startService(this, extras)
-                                    }
-                                    "imageWithHeading" -> {
-                                        setUp(this,extras)
-                                        imageWithHeading(this,extras)
-                                    }
-                                    "imageWithSubHeading" -> {
-                                        setUp(this,extras)
-                                        imageWithSubHeading(this, extras)
-                                    }
-                                    "smallTextImageCard" -> {
-                                        setUp(this,extras)
-                                        setSmallTextImageCard(this,extras)
-                                    }
-                                    else -> {
-                                        sendNotification(this, extras)
-                                    }
-                                }
-                            } else {
-                                CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(
-                                    extras
-                                )
-                            }
+                    val nm = extras.getString("nm")
+                    if (nm != null && nm != "") {
+                        val message = extras.getString("message") ?: extras.getString("nm")
+                        if (message != "") {
+                            handleNotification(notificationType, extras)
+                        } else {
+                            CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(extras)
                         }
                     }
                 } else {
-                    setUp(this, extras)
-                    when (notificationType) {
-                        "R" -> {
-                            setUp(this, extras)
-                            renderRatingNotification(this, extras)
-                        }
-                        "Z" -> {
-                            setUp(this, extras)
-                            renderZeroBezelNotification(this, extras)
-                        }
-                        "O" -> {
-                            setUp(this, extras)
-                            renderOneBezelNotification(this, extras)
-                        }
-                        "A" -> {
-                            startService(this, extras)
-                        }
-                        "imageWithHeading" -> {
-                            setUp(this,extras)
-                            imageWithHeading(this,extras)
-                        }
-                        "imageWithSubHeading" -> {
-                            setUp(this,extras)
-                            imageWithSubHeading(this, extras)
-                        }
-                        "smallTextImageCard" -> {
-                            setUp(this,extras)
-                            setSmallTextImageCard(this,extras)
-                        }
-                        else -> {
-                            Log.d(TAG, "onMessageReceived: in else part")
-                            sendNotification(this, extras)
-                        }
-                    }
+                    handleNotification(notificationType, extras)
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun handleNotification(notificationType: String?, extras: Bundle) {
+        when (notificationType) {
+            "R" -> {
+                setUp(this, extras)
+                renderRatingNotification(this, extras)
+            }
+            "Z" -> {
+                setUp(this, extras)
+                renderZeroBezelNotification(this, extras)
+            }
+            "O" -> {
+                setUp(this, extras)
+                renderOneBezelNotification(this, extras)
+            }
+            "A" -> {
+                startService(this, extras)
+            }
+            "imageWithHeading" -> {
+                setUp(this, extras)
+                imageWithHeading(this, extras)
+            }
+            "imageWithSubHeading" -> {
+                setUp(this, extras)
+                imageWithSubHeading(this, extras)
+            }
+            "smallTextImageCard" -> {
+                setUp(this, extras)
+                setSmallTextImageCard(this, extras)
+            }
+            else -> {
+                sendNotification(this, extras)
+            }
         }
     }
 
@@ -316,13 +283,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
         try {
             var message = extras.getString("message")
                 ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
-            var image = getBitmapfromUrl(extras.getString("image"), context)
-            var url = extras.getString("link")
+            val image = getBitmapfromUrl(extras.getString("image"), context)
+            val url = extras.getString("link")
             var which = extras.getString("which")
             var title = extras.getString("title")
                 ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             if (message == null || message.equals("")) {
-                message = extras!!.getString("nm")
+                message = extras.getString("nm")
                     ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             }
             if (title == null || title.equals("")) {
@@ -1739,24 +1706,24 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
         message = extras!!.getString("message")
             ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         if (message == null || message.equals("")) {
-            message = extras!!.getString("nm")
+            message = extras.getString("nm")
                 ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         }
-        messageBody = extras!!.getString("messageBody")
+        messageBody = extras.getString("messageBody")
             ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
-        message_clr = extras!!.getString("message_clr")
-        title = extras!!.getString("title")
+        message_clr = extras.getString("message_clr")
+        title = extras.getString("title")
             ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         if (title == null || title.equals("")) {
             title = extras.getString("nt")
                 ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
         }
-        title_clr = extras!!.getString("title_clr")
-        meta_clr = extras!!.getString("meta_clr")
-        pt_bg = extras!!.getString("pt_bg")
-        image = extras!!.getString("image")
-        large_icon = extras!!.getString("large_icon")
-        small_icon_clr = extras!!.getString("small_icon_clr")
+        title_clr = extras.getString("title_clr")
+        meta_clr = extras.getString("meta_clr")
+        pt_bg = extras.getString("pt_bg")
+        image = extras.getString("image")
+        large_icon = extras.getString("large_icon")
+        small_icon_clr = extras.getString("small_icon_clr")
     }
 
     companion object {
