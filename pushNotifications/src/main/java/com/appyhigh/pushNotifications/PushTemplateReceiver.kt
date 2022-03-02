@@ -4,10 +4,8 @@ import android.app.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
@@ -17,8 +15,8 @@ import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.appyhigh.pushNotifications.Constants.FCM_ICON
 import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
+import com.appyhigh.pushNotifications.MyFirebaseMessagingService.Companion.bitmapImage
 import java.util.*
-import com.appyhigh.pushNotifications.MyFirebaseMessagingService.Companion.bitmapImage;
 
 class PushTemplateReceiver : BroadcastReceiver() {
     var clicked = 0

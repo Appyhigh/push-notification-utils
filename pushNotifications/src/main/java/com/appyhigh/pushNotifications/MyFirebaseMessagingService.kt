@@ -35,6 +35,8 @@ import com.google.android.play.core.tasks.Task
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
 import retrofit2.Call
@@ -157,6 +159,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
             // Check if message contains a data payload.
             if (remoteMessage.data.isNotEmpty()) {
                 Log.d(TAG, "Message data payload: " + remoteMessage.data)
+
+                //added to check if addressNotification is unread
+                if(remoteMessage.data["notificationFrom"] == "MY_ADDRESS"){
+                    val preference = getSharedPreferences("notificationData", MODE_PRIVATE)
+                    preference.edit().putBoolean("isNotification",true).apply()
+                }
                 // Check if message contains a notification payload.
                 if (remoteMessage.notification != null) {
                     Log.d(TAG, "Message Notification Body: " + remoteMessage.notification!!.body)
@@ -165,6 +173,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                 for ((key, value) in remoteMessage.data) {
                     extras.putString(key, value)
                 }
+                //Added time stamp for notifications
+                val format: Long = System.currentTimeMillis()
+                extras.putString("timestamp",format.toString())
                 val notificationType = extras.getString("notificationType")
                 val sharedPreferences = getSharedPreferences("missedNotifications", MODE_PRIVATE)
                 sharedPreferences.edit().putString(
@@ -212,56 +223,89 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                 }
                 val info = CleverTapAPI.getNotificationInfo(extras)
                 if (info.fromCleverTap) {
-                    val nm = extras.getString("nm")
-                    if (nm != null && nm != "") {
-                        val message = extras.getString("message") ?: extras.getString("nm")
-                        if (message != "") {
-                            handleNotification(notificationType, extras)
-                        } else {
-                            CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(extras)
+                    if (extras.getString("nm") != "" || extras.getString("nm") != null
+                    ) {
+                        val message = extras.getString("message")
+                        if (message != null) {
+                            if (message != "") {
+                                when (notificationType) {
+                                    "R" -> {
+                                        setUp(this, extras)
+                                        renderRatingNotification(this, extras)
+                                    }
+                                    "Z" -> {
+                                        setUp(this, extras)
+                                        renderZeroBezelNotification(this, extras)
+                                    }
+                                    "O" -> {
+                                        setUp(this, extras)
+                                        renderOneBezelNotification(this, extras)
+                                    }
+                                    "A" -> {
+                                        startService(this, extras)
+                                    }
+                                    "imageWithHeading" -> {
+                                        setUp(this,extras)
+                                        imageWithHeading(this,extras)
+                                    }
+                                    "imageWithSubHeading" -> {
+                                        setUp(this,extras)
+                                        imageWithSubHeading(this, extras)
+                                    }
+                                    "smallTextImageCard" -> {
+                                        setUp(this,extras)
+                                        setSmallTextImageCard(this,extras)
+                                    }
+                                    else -> {
+                                        sendNotification(this, extras)
+                                    }
+                                }
+                            } else {
+                                CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(
+                                    extras
+                                )
+                            }
                         }
                     }
                 } else {
-                    handleNotification(notificationType, extras)
+                    setUp(this, extras)
+                    when (notificationType) {
+                        "R" -> {
+                            setUp(this, extras)
+                            renderRatingNotification(this, extras)
+                        }
+                        "Z" -> {
+                            setUp(this, extras)
+                            renderZeroBezelNotification(this, extras)
+                        }
+                        "O" -> {
+                            setUp(this, extras)
+                            renderOneBezelNotification(this, extras)
+                        }
+                        "A" -> {
+                            startService(this, extras)
+                        }
+                        "imageWithHeading" -> {
+                            setUp(this,extras)
+                            imageWithHeading(this,extras)
+                        }
+                        "imageWithSubHeading" -> {
+                            setUp(this,extras)
+                            imageWithSubHeading(this, extras)
+                        }
+                        "smallTextImageCard" -> {
+                            setUp(this,extras)
+                            setSmallTextImageCard(this,extras)
+                        }
+                        else -> {
+                            Log.d(TAG, "onMessageReceived: in else part")
+                            sendNotification(this, extras)
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-        }
-    }
-
-    private fun handleNotification(notificationType: String?, extras: Bundle) {
-        when (notificationType) {
-            "R" -> {
-                setUp(this, extras)
-                renderRatingNotification(this, extras)
-            }
-            "Z" -> {
-                setUp(this, extras)
-                renderZeroBezelNotification(this, extras)
-            }
-            "O" -> {
-                setUp(this, extras)
-                renderOneBezelNotification(this, extras)
-            }
-            "A" -> {
-                startService(this, extras)
-            }
-            "imageWithHeading" -> {
-                setUp(this, extras)
-                imageWithHeading(this, extras)
-            }
-            "imageWithSubHeading" -> {
-                setUp(this, extras)
-                imageWithSubHeading(this, extras)
-            }
-            "smallTextImageCard" -> {
-                setUp(this, extras)
-                setSmallTextImageCard(this, extras)
-            }
-            else -> {
-                sendNotification(this, extras)
-            }
         }
     }
 
@@ -297,6 +341,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                     ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
             }
             Log.i("Result", "Got the data yessss")
+            //added to put extras to intent when notification is from address module
+            var notificationFrom = extras.getString("notificationFrom")
+            if(notificationFrom != null && notificationFrom == "MY_ADDRESS"){
+                extras.putString("addressNotification","true")
+            }
             val rand = Random()
             val a = rand.nextInt(101) + 1
             val intent = Intent(context.applicationContext, FCM_TARGET_ACTIVITY)
@@ -324,15 +373,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                         .setSound(defaultSoundUri)
                         .setContentIntent(pendingIntent)
                         .setPriority(Notification.PRIORITY_DEFAULT)
-                    try{
-                        val bitmap = Picasso.get().load(extras.getString("image")).get()
-                        notificationBuilder.setLargeIcon(bitmap)
-                        notificationBuilder.setStyle(NotificationCompat.BigPictureStyle()
-                            .bigPicture(bitmap))
-                    } catch (ex:java.lang.Exception){
-                        ex.printStackTrace()
-                    }
 
+                    //added a check for address notification
+                    if(notificationFrom != "MY_ADDRESS"){
+                        try{
+                            val bitmap = Picasso.get().load(extras.getString("image")).get()
+                            notificationBuilder.setLargeIcon(bitmap)
+                            notificationBuilder.setStyle(NotificationCompat.BigPictureStyle()
+                                .bigPicture(bitmap))
+                        } catch (ex:java.lang.Exception){
+                            ex.printStackTrace()
+                        }
+                    }
                 } else {
                     notificationBuilder = NotificationCompat.Builder(context.applicationContext)
                         .setLargeIcon(image) /*Notification icon image*/
@@ -1138,9 +1190,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                             }
                         }
                     }, 1000)
+                    //added for time stamp
+                    val format: Long = System.currentTimeMillis()
+                    val parser = JsonParser()
+                    val tempObject:JsonObject = parser.parse(notificationObject.data) as JsonObject
+                    tempObject.addProperty("timestamp",format)
                     sharedPreferences.edit().putString(
                         notificationObject.id,
-                        notificationObject.data
+                        tempObject.toString()
                     ).apply()
                 }
             }.start()
@@ -1731,5 +1788,4 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
         var bitmapImage: Bitmap? = null
             private set
     }
-
 }
