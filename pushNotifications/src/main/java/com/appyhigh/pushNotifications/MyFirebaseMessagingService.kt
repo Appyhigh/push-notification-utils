@@ -49,7 +49,7 @@ import java.net.URL
 import java.util.*
 
 
-class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotificationButtonListener {
+class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificationButtonListener {
 
     var bitmap: Bitmap? = null
     private var title: String? = null
@@ -165,7 +165,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                     val preference = getSharedPreferences("notificationData", MODE_PRIVATE)
                     preference.edit().putBoolean("isNotification",true).apply()
                 }
-                // Check if message contains a notification payload.
+                // Check if message contains a notiddfication payload.
                 if (remoteMessage.notification != null) {
                     Log.d(TAG, "Message Notification Body: " + remoteMessage.notification!!.body)
                 }
@@ -173,136 +173,143 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                 for ((key, value) in remoteMessage.data) {
                     extras.putString(key, value)
                 }
-                //Added time stamp for notifications
-                val format: Long = System.currentTimeMillis()
-                extras.putString("timestamp",format.toString())
-                val notificationType = extras.getString("notificationType")
-                val sharedPreferences = getSharedPreferences("missedNotifications", MODE_PRIVATE)
-                sharedPreferences.edit().putString(
-                    extras.getString("link", "default"),
-                    extras.toString()
-                ).apply()
-                packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).apply {
-                    // setting the small icon for notification
-                    if (metaData.containsKey("FCM_ICON")) {
-                        Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_ICON"))
-                        FCM_ICON = metaData.getInt("FCM_ICON")
-                    }
-                    //getting and setting the target activity that is to be opened on notification click
-                    if (extras.containsKey("target_activity")) {
-                        FCM_TARGET_ACTIVITY = Class.forName(
-                            extras.getString(
-                                "target_activity",
-                                ""
-                            )
-                        ) as Class<out Activity?>?
-                    } else if (FCM_TARGET_ACTIVITY == null) {
-                        Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_ACTIVITY"))
-                        FCM_TARGET_ACTIVITY = Class.forName(
-                            metaData.get("FCM_TARGET_ACTIVITY").toString()
-                        ) as Class<out Activity?>?
-                    }
-                    try {
-                        //getting and setting the target service that that needs to be opened
-                        if (extras.containsKey("target_service")) {
-                            FCM_TARGET_SERVICE = Class.forName(
+                if (remoteMessage.data.containsKey("notification_source")
+                    && remoteMessage.data["notification_source"].equals("flyy_sdk", ignoreCase = true)) {
+                    onMessageReceivedListener?.onMessageReceived(remoteMessage)
+                } else{
+                    onMessageReceivedListener?.onMessageReceived(extras)
+                    //Added time stamp for notifications
+                    val format: Long = System.currentTimeMillis()
+                    extras.putString("timestamp",format.toString())
+                    val notificationType = extras.getString("notificationType")
+                    val sharedPreferences = getSharedPreferences("missedNotifications", MODE_PRIVATE)
+                    sharedPreferences.edit().putString(
+                        extras.getString("link", "default"),
+                        extras.toString()
+                    ).apply()
+                    packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).apply {
+                        // setting the small icon for notification
+                        if (metaData.containsKey("FCM_ICON")) {
+                            Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_ICON"))
+                            FCM_ICON = metaData.getInt("FCM_ICON")
+                        }
+                        //getting and setting the target activity that is to be opened on notification click
+                        if (extras.containsKey("target_activity")) {
+                            FCM_TARGET_ACTIVITY = Class.forName(
                                 extras.getString(
-                                    "target_service",
+                                    "target_activity",
                                     ""
                                 )
-                            ) as Class<out IntentService?>?
-                        } else if (FCM_TARGET_SERVICE == null) {
-                            Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_SERVICE"))
-                            FCM_TARGET_SERVICE = Class.forName(
-                                metaData.get("FCM_TARGET_SERVICE").toString()
-                            ) as Class<out IntentService?>?
+                            ) as Class<out Activity?>?
+                        } else if (FCM_TARGET_ACTIVITY == null) {
+                            Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_ACTIVITY"))
+                            FCM_TARGET_ACTIVITY = Class.forName(
+                                metaData.get("FCM_TARGET_ACTIVITY").toString()
+                            ) as Class<out Activity?>?
                         }
-                    } catch(ex: Exception){
-                        ex.printStackTrace()
+                        try {
+                            //getting and setting the target service that that needs to be opened
+                            if (extras.containsKey("target_service")) {
+                                FCM_TARGET_SERVICE = Class.forName(
+                                    extras.getString(
+                                        "target_service",
+                                        ""
+                                    )
+                                ) as Class<out IntentService?>?
+                            } else if (FCM_TARGET_SERVICE == null) {
+                                Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_TARGET_SERVICE"))
+                                FCM_TARGET_SERVICE = Class.forName(
+                                    metaData.get("FCM_TARGET_SERVICE").toString()
+                                ) as Class<out IntentService?>?
+                            }
+                        } catch(ex: Exception){
+                            ex.printStackTrace()
+                        }
                     }
-                }
-                val info = CleverTapAPI.getNotificationInfo(extras)
-                if (info.fromCleverTap) {
-                    if (extras.getString("nm") != "" || extras.getString("nm") != null
-                    ) {
-                        val message = extras.getString("message")
-                        if (message != null) {
-                            if (message != "") {
-                                when (notificationType) {
-                                    "R" -> {
-                                        setUp(this, extras)
-                                        renderRatingNotification(this, extras)
+                    val info = CleverTapAPI.getNotificationInfo(extras)
+                    if (info.fromCleverTap) {
+                        if (extras.getString("nm") != "" || extras.getString("nm") != null
+                        ) {
+                            val message = extras.getString("message")
+                            if (message != null) {
+                                if (message != "") {
+                                    when (notificationType) {
+                                        "R" -> {
+                                            setUp(this, extras)
+                                            renderRatingNotification(this, extras)
+                                        }
+                                        "Z" -> {
+                                            setUp(this, extras)
+                                            renderZeroBezelNotification(this, extras)
+                                        }
+                                        "O" -> {
+                                            setUp(this, extras)
+                                            renderOneBezelNotification(this, extras)
+                                        }
+                                        "A" -> {
+                                            startService(this, extras)
+                                        }
+                                        "imageWithHeading" -> {
+                                            setUp(this,extras)
+                                            imageWithHeading(this,extras)
+                                        }
+                                        "imageWithSubHeading" -> {
+                                            setUp(this,extras)
+                                            imageWithSubHeading(this, extras)
+                                        }
+                                        "smallTextImageCard" -> {
+                                            setUp(this,extras)
+                                            setSmallTextImageCard(this,extras)
+                                        }
+                                        else -> {
+                                            sendNotification(this, extras)
+                                        }
                                     }
-                                    "Z" -> {
-                                        setUp(this, extras)
-                                        renderZeroBezelNotification(this, extras)
-                                    }
-                                    "O" -> {
-                                        setUp(this, extras)
-                                        renderOneBezelNotification(this, extras)
-                                    }
-                                    "A" -> {
-                                        startService(this, extras)
-                                    }
-                                    "imageWithHeading" -> {
-                                        setUp(this,extras)
-                                        imageWithHeading(this,extras)
-                                    }
-                                    "imageWithSubHeading" -> {
-                                        setUp(this,extras)
-                                        imageWithSubHeading(this, extras)
-                                    }
-                                    "smallTextImageCard" -> {
-                                        setUp(this,extras)
-                                        setSmallTextImageCard(this,extras)
-                                    }
-                                    else -> {
-                                        sendNotification(this, extras)
-                                    }
+                                } else {
+                                    CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(
+                                        extras
+                                    )
                                 }
-                            } else {
-                                CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(
-                                    extras
-                                )
+                            }
+                        }
+                    } else {
+                        setUp(this, extras)
+                        when (notificationType) {
+                            "R" -> {
+                                setUp(this, extras)
+                                renderRatingNotification(this, extras)
+                            }
+                            "Z" -> {
+                                setUp(this, extras)
+                                renderZeroBezelNotification(this, extras)
+                            }
+                            "O" -> {
+                                setUp(this, extras)
+                                renderOneBezelNotification(this, extras)
+                            }
+                            "A" -> {
+                                startService(this, extras)
+                            }
+                            "imageWithHeading" -> {
+                                setUp(this,extras)
+                                imageWithHeading(this,extras)
+                            }
+                            "imageWithSubHeading" -> {
+                                setUp(this,extras)
+                                imageWithSubHeading(this, extras)
+                            }
+                            "smallTextImageCard" -> {
+                                setUp(this,extras)
+                                setSmallTextImageCard(this,extras)
+                            }
+                            else -> {
+                                Log.d(TAG, "onMessageReceived: in else part")
+                                sendNotification(this, extras)
                             }
                         }
                     }
-                } else {
-                    setUp(this, extras)
-                    when (notificationType) {
-                        "R" -> {
-                            setUp(this, extras)
-                            renderRatingNotification(this, extras)
-                        }
-                        "Z" -> {
-                            setUp(this, extras)
-                            renderZeroBezelNotification(this, extras)
-                        }
-                        "O" -> {
-                            setUp(this, extras)
-                            renderOneBezelNotification(this, extras)
-                        }
-                        "A" -> {
-                            startService(this, extras)
-                        }
-                        "imageWithHeading" -> {
-                            setUp(this,extras)
-                            imageWithHeading(this,extras)
-                        }
-                        "imageWithSubHeading" -> {
-                            setUp(this,extras)
-                            imageWithSubHeading(this, extras)
-                        }
-                        "smallTextImageCard" -> {
-                            setUp(this,extras)
-                            setSmallTextImageCard(this,extras)
-                        }
-                        else -> {
-                            Log.d(TAG, "onMessageReceived: in else part")
-                            sendNotification(this, extras)
-                        }
-                    }
                 }
+
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -360,6 +367,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
             )
+            val preference = getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
+            val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             if (title != null && message != null) {
                 var notificationBuilder: NotificationCompat.Builder;
@@ -399,6 +408,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                         .setSound(defaultSoundUri)
                         .setContentIntent(pendingIntent)
                         .setPriority(Notification.PRIORITY_DEFAULT)
+                }
+                if(isGrouping){
+                    notificationBuilder.setGroup("pushLib"+a+1).setGroupSummary(true)
                 }
                 val notificationManager =
                     context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -1257,6 +1269,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                         HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
                     }
                 }
+                onMessageReceivedListener?.onMessageReceived(extras!!)
                 Log.i("Result", "Got the data yessss")
                 val rand = Random()
                 val a = rand.nextInt(101) + 1
@@ -1302,6 +1315,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
                                 .setSound(defaultSoundUri)
                                 .setContentIntent(pendingIntent)
                                 .setPriority(Notification.PRIORITY_DEFAULT)
+                    }
+                    val preference = context!!.getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
+                    val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
+                    if(isGrouping){
+                        notificationBuilder.setGroup("pushLib"+a+1).setGroupSummary(true)
                     }
                     val notificationManager =
                         context!!.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -1785,6 +1803,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), InAppNotification
 
     companion object {
         private const val TAG = "FirebaseMessageService"
+        var onMessageReceivedListener: OnMessageReceivedListener?=null
         var bitmapImage: Bitmap? = null
             private set
     }
