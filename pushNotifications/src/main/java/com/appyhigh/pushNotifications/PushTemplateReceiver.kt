@@ -10,12 +10,14 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
-import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
-import com.appyhigh.pushNotifications.Constants.FCM_ICON
-import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
+import com.appyhigh.pushNotifications.utils.Constants.FCM_ICON
+import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_ACTIVITY
 import com.appyhigh.pushNotifications.MyFirebaseMessagingService.Companion.bitmapImage
+import com.appyhigh.pushNotifications.utils.Utils
+import com.google.firebase.messaging.FirebaseMessagingService
+import java.lang.Exception
 import java.util.*
 
 class PushTemplateReceiver : BroadcastReceiver() {
@@ -40,9 +42,32 @@ class PushTemplateReceiver : BroadcastReceiver() {
         Log.d(TAG, "onReceive: ")
         //        Utils.createSilentNotificationChannel(context);
         if (intent.extras != null) {
-            val extras = intent.extras
-            setUp(context, extras)
-            handleRatingNotification(context, extras)
+            if(intent.action == "SHARE_CLICK"){
+                handleShareClick(context, intent.extras)
+            } else {
+                val extras = intent.extras
+                setUp(context, extras)
+                handleRatingNotification(context, extras)
+            }
+        }
+    }
+
+    private fun handleShareClick(context: Context, extras: Bundle?){
+        try{
+            val shareIntent = Intent(context, FCM_TARGET_ACTIVITY)
+            shareIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            shareIntent.action = "SHARE_CLICK"
+            if (extras != null) {
+                shareIntent.putExtras(extras)
+            }
+            shareIntent.putExtra("onSharePostClicked", true)
+            context.startActivity(shareIntent)
+            val closeIntent = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+            context.sendBroadcast(closeIntent)
+            val notificationManager = context.getSystemService(FirebaseMessagingService.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(extras!!.getInt("notificationId"))
+        } catch (ex:Exception){
+            ex.printStackTrace()
         }
     }
 

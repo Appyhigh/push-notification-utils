@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="pushNotifications/src/main/res/drawable/ic_push_share.xml" value="0.18854166666666666" />
+        <entry key="pushNotifications/src/main/res/drawable/scrim.xml" value="0.1859375" />
+        <entry key="pushNotifications/src/main/res/layout/content_view_small.xml" value="0.16145833333333334" />
+        <entry key="pushNotifications/src/main/res/layout/cv_big_native.xml" value="0.335" />
+        <entry key="pushNotifications/src/main/res/layout/cv_small_native.xml" value="0.335" />
+        <entry key="pushNotifications/src/main/res/layout/cv_small_one_bezel.xml" value="0.16979166666666667" />
+        <entry key="pushNotifications/src/main/res/layout/cv_small_zero_bezel.xml" value="0.16979166666666667" />
+        <entry key="pushNotifications/src/main/res/layout/metadata.xml" value="0.16979166666666667" />
+        <entry key="pushNotifications/src/main/res/layout/notification.xml" value="0.16145833333333334" />
+        <entry key="pushNotifications/src/main/res/layout/one_bezel.xml" value="0.16979166666666667" />
+        <entry key="pushNotifications/src/main/res/layout/zero_bezel.xml" value="0.2006079027355623" />
+      </map>
+    </option>
+  </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>

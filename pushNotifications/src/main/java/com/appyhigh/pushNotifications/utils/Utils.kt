@@ -1,13 +1,11 @@
-package com.appyhigh.pushNotifications
+package com.appyhigh.pushNotifications.utils
 
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
 import android.text.format.DateUtils
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import java.util.*
 

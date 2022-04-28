@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -17,16 +18,26 @@ import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.webkit.URLUtil
+import android.widget.ImageView
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.text.HtmlCompat
-import com.appyhigh.pushNotifications.Constants.FCM_ICON
-import com.appyhigh.pushNotifications.Constants.FCM_TARGET_ACTIVITY
-import com.appyhigh.pushNotifications.Constants.FCM_TARGET_SERVICE
+import com.appyhigh.pushNotifications.utils.Constants.FCM_ICON
+import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_ACTIVITY
+import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_SERVICE
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
+import com.appyhigh.pushNotifications.utils.Constants
+import com.appyhigh.pushNotifications.utils.RSAKeyGenerator
+import com.appyhigh.pushNotifications.utils.Utils
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
+import com.bumptech.glide.request.RequestListener
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.InAppNotificationButtonListener
 import com.google.android.play.core.review.ReviewInfo
@@ -47,6 +58,9 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
+import com.bumptech.glide.request.target.NotificationTarget
+import com.bumptech.glide.request.target.Target
+import com.google.android.material.snackbar.Snackbar
 
 
 class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificationButtonListener {
@@ -75,6 +89,44 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
     private lateinit var appName: String
     private var retrofit: Retrofit? = null
     private var apiInterface: APIInterface? = null
+
+    constructor(context: Context, checkForNotificationPermission:Boolean = false, viewForSnackbar:View?=null) : this() {
+        if(checkForNotificationPermission) {
+            checkNotificationPermissions(context, viewForSnackbar)
+        }
+    }
+
+    fun checkNotificationPermissions(context: Context, viewForSnackbar: View?){
+        try{
+            val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val areNotificationsEnabled = notificationManager.areNotificationsEnabled()
+                if (!areNotificationsEnabled) {
+                    // Because the user took an action to create a notification, we create a prompt to let
+                    // the user re-enable notifications for this application again.
+                    val snackbar: Snackbar = Snackbar.make(viewForSnackbar!!, "You need to enable notifications for this app", Snackbar.LENGTH_LONG)
+                        .setAction("ENABLE", View.OnClickListener { // Links to this app's notification settings
+                            openNotificationSettingsForApp()
+                        })
+                    snackbar.show()
+                    return
+                }
+            }
+        } catch (ex:java.lang.Exception){
+            ex.printStackTrace()
+        }
+    }
+
+    private fun openNotificationSettingsForApp() {
+        // Links to this app's notification settings.
+        val intent = Intent()
+        intent.action = "android.settings.APP_NOTIFICATION_SETTINGS"
+        intent.putExtra("app_package", packageName)
+        intent.putExtra("app_uid", applicationInfo.uid)
+        // for Android 8 and above
+        intent.putExtra("android.provider.extra.APP_PACKAGE", packageName)
+        startActivity(intent)
+    }
 
     fun addTopics(context: Context, appName: String, isDebug: Boolean) {
         if (appName.equals("")) {
@@ -234,6 +286,10 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                             if (message != null) {
                                 if (message != "") {
                                     when (notificationType) {
+                                        "N" -> {
+                                            setUp(this, extras)
+                                            sendNativeNotification(this, extras)
+                                        }
                                         "R" -> {
                                             setUp(this, extras)
                                             renderRatingNotification(this, extras)
@@ -275,31 +331,29 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                     } else {
                         setUp(this, extras)
                         when (notificationType) {
+                            "N" -> {
+                                Log.d(TAG, "onMessageReceived: in native part")
+                                sendNativeNotification(this, extras)
+                            }
                             "R" -> {
-                                setUp(this, extras)
                                 renderRatingNotification(this, extras)
                             }
                             "Z" -> {
-                                setUp(this, extras)
                                 renderZeroBezelNotification(this, extras)
                             }
                             "O" -> {
-                                setUp(this, extras)
                                 renderOneBezelNotification(this, extras)
                             }
                             "A" -> {
                                 startService(this, extras)
                             }
                             "imageWithHeading" -> {
-                                setUp(this,extras)
                                 imageWithHeading(this,extras)
                             }
                             "imageWithSubHeading" -> {
-                                setUp(this,extras)
                                 imageWithSubHeading(this, extras)
                             }
                             "smallTextImageCard" -> {
-                                setUp(this,extras)
                                 setSmallTextImageCard(this,extras)
                             }
                             else -> {
@@ -439,6 +493,136 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
         }
     }
 
+    private fun sendNativeNotification(context: Context, extras: Bundle){
+        try{
+            val rand = Random()
+            val a = rand.nextInt(101) + 1
+            contentViewBig = RemoteViews(context.packageName, R.layout.cv_big_native)
+            contentViewSmall = RemoteViews(context.packageName, R.layout.cv_small_native)
+            contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+            contentViewBig!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+            contentViewSmall!!.setImageViewResource(R.id.small_icon, FCM_ICON)
+            contentViewBig!!.setImageViewResource(R.id.small_icon, FCM_ICON)
+            setCustomContentViewTitle(contentViewBig!!, title)
+            setCustomContentViewTitle(contentViewSmall!!, title)
+            setCustomContentViewTitleColour(contentViewBig!!, title_clr)
+            setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            val notificationFrom = extras.getString("notificationFrom")
+            if(notificationFrom != null && notificationFrom == "MY_ADDRESS"){
+                extras.putString("addressNotification","true")
+            }
+            val launchIntent = Intent(context, FCM_TARGET_ACTIVITY)
+            launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            launchIntent.action = System.currentTimeMillis().toString()
+            launchIntent.putExtras(extras)
+            val pIntent = PendingIntent.getActivity(context, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT)
+            val shareIntent = Intent(context, PushTemplateReceiver::class.java)
+            shareIntent.action = "SHARE_CLICK"
+            shareIntent.putExtra("onSharePostClicked", true)
+            shareIntent.putExtra("notificationId", a + 1)
+            shareIntent.putExtras(extras)
+            val sharePendingIntent = PendingIntent.getBroadcast(context, Random().nextInt(), shareIntent, 0)
+            contentViewBig!!.setOnClickPendingIntent(R.id.shareIconLayout, sharePendingIntent)
+            if(isDarkTheme()){
+                contentViewBig!!.setInt(R.id.share_icon, "setColorFilter", Color.WHITE)
+            }
+            if(image.isNullOrEmpty()){
+                contentViewSmall!!.setViewVisibility(R.id.big_image, View.GONE)
+                contentViewBig!!.setViewVisibility(R.id.imageLayout, View.GONE)
+            }
+            var useGlide = false
+            //added a check for address notification
+            if(notificationFrom != "MY_ADDRESS") {
+                try{
+                    bitmapImage = getBitmapfromUrl(image, context)
+                    if (bitmapImage != null) {
+                        contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                        contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
+                        contentViewBig!!.setViewVisibility(R.id.share_icon, View.GONE)
+                        contentViewBig!!.setViewVisibility(R.id.share_icon_light, View.VISIBLE)
+                        contentViewBig!!.setTextColor(R.id.title, Color.WHITE)
+                    } else{
+                        useGlide = true
+                        contentViewSmall!!.setViewVisibility(R.id.big_image, View.GONE)
+                        contentViewBig!!.setViewVisibility(R.id.imageLayout, View.GONE)
+                    }
+                } catch (ex:java.lang.Exception){
+                    ex.printStackTrace()
+                }
+            }
+            val notificationManager =
+                context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val id = "messenger_general"
+            val name = "General"
+            val description = "General Notifications sent by the app"
+            val preference = getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
+            val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val notificationBuilder = NotificationCompat.Builder(this, id)
+                .setSmallIcon(FCM_ICON)
+                .setContentTitle(title)
+                .setCustomContentView(contentViewSmall)
+                .setCustomBigContentView(contentViewBig)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pIntent)
+                .setPriority(Notification.PRIORITY_DEFAULT)
+
+            if(useGlide){
+                try{
+                    val glideImage = GlideUrl(image, LazyHeaders.Builder().addHeader("User-Agent", "5").build())
+                    val expandedNotificationTarget = NotificationTarget(context, R.id.big_image, contentViewBig, notificationBuilder.build(),(a+1))
+                    Glide.with(this)
+                        .asBitmap()
+                        .load(glideImage).listener(object: RequestListener<Bitmap>{
+                            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Bitmap>?, isFirstResource: Boolean): Boolean {
+                               return true
+                            }
+
+                            override fun onResourceReady(resource: Bitmap?, model: Any?, target: Target<Bitmap>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+                                if(resource!=null){
+                                    contentViewBig!!.setViewVisibility(R.id.share_icon, View.GONE)
+                                    contentViewBig!!.setViewVisibility(R.id.share_icon_light, View.VISIBLE)
+                                    contentViewBig!!.setTextColor(R.id.title, Color.WHITE)
+                                    contentViewBig!!.setImageViewBitmap(R.id.big_image, resource)
+                                    contentViewSmall!!.setImageViewBitmap(R.id.big_image, resource)
+                                    contentViewSmall!!.setViewVisibility(R.id.big_image, View.VISIBLE)
+                                    contentViewBig!!.setViewVisibility(R.id.imageLayout, View.VISIBLE)
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                                    } else {
+                                        notificationManager.notify(a + 1, notificationBuilder.build())
+                                    }
+                                }
+                                return true
+                            }
+                        }).into(expandedNotificationTarget)
+                } catch (ex:java.lang.Exception){
+                    ex.printStackTrace()
+                }
+            }
+            if(isGrouping){
+                notificationBuilder.setGroup("pushLib"+a+1).setGroupSummary(true)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // The id of the channel.
+                val mChannel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
+                mChannel.description = description
+                mChannel.enableLights(true)
+                mChannel.lightColor = Color.BLUE
+                mChannel.enableVibration(true)
+                if (notificationManager != null) {
+                    notificationManager.createNotificationChannel(mChannel)
+                    notificationManager.notify(a + 1, notificationBuilder.setChannelId(id).build())
+                }
+            } else {
+                notificationManager?.notify(a + 1, notificationBuilder.build())
+            }
+            Log.d(TAG, "sendNativeNotification: ")
+        } catch (ex:java.lang.Exception){
+            ex.printStackTrace()
+        }
+    }
 
     private fun renderRatingNotification(context: Context, extras: Bundle) {
         try {
@@ -1072,6 +1256,12 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
     }
 
 
+
+    fun isDarkTheme(): Boolean {
+        return this.resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    }
+
     fun isValidUrl(urlString: String?): Boolean {
         try {
             val url = URL(urlString)
@@ -1111,7 +1301,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             retrofit = APIClient.getClient()
             apiInterface = retrofit?.create(APIInterface::class.java)
             getAppName(context)
-            apiInterface!!.getNotifications(context.packageName).enqueue(object :
+            apiInterface!!.getNotifications(RSAKeyGenerator.getJwtToken()?:"",context.packageName).enqueue(object :
                 Callback<ArrayList<NotificationPayloadModel>> {
                 override fun onResponse(
                     call: Call<ArrayList<NotificationPayloadModel>>,
@@ -1184,16 +1374,16 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                     setUp(context, extras)
                     Handler(Looper.getMainLooper()).postDelayed({
                         when (extras.getString("notificationType", "")) {
+                            "N" -> {
+                                sendNativeNotification(context, extras)
+                            }
                             "R" -> {
-                                setUp(context, extras)
                                 renderRatingNotification(context, extras)
                             }
                             "Z" -> {
-                                setUp(context, extras)
                                 renderZeroBezelNotification(context, extras)
                             }
                             "O" -> {
-                                setUp(context, extras)
                                 renderOneBezelNotification(context, extras)
                             }
                             else -> {
