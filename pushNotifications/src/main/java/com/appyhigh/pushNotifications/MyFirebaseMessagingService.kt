@@ -534,7 +534,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             //added a check for address notification
             if(notificationFrom != "MY_ADDRESS") {
                 try{
-                    bitmapImage = getBitmapfromUrl(image, context)
+                    bitmapImage = getBitmapFromUrl(image)
                     if (bitmapImage != null) {
                         contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                         contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
