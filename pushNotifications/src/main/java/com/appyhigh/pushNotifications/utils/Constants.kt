@@ -1,7 +1,8 @@
-package com.appyhigh.pushNotifications
+package com.appyhigh.pushNotifications.utils
 
 import android.app.Activity
 import android.app.IntentService
+import com.appyhigh.pushNotifications.R
 
 object Constants {
     val FCM_DEBUG_TOPIC = ""

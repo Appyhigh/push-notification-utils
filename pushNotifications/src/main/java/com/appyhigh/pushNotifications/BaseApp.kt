@@ -3,8 +3,8 @@ package com.appyhigh.pushNotifications
 import android.app.Application
 import android.content.ComponentCallbacks
 import android.content.res.Configuration
-import com.appyhigh.pushNotifications.Constants.FCM_DEBUG_TOPIC
-import com.appyhigh.pushNotifications.Constants.FCM_RELASE_TOPIC
+import com.appyhigh.pushNotifications.utils.Constants.FCM_DEBUG_TOPIC
+import com.appyhigh.pushNotifications.utils.Constants.FCM_RELASE_TOPIC
 import com.google.firebase.BuildConfig
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging

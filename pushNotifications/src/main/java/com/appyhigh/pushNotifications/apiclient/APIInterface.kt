@@ -8,8 +8,9 @@ import retrofit2.http.Query
 
 interface APIInterface {
 
-    @GET("notifications/?")
+    @GET("notifications")
     fun getNotifications(
+        @Header("Authorization") authorization: String?,
         @Query("package_id") packageName: String?
     ): Call<ArrayList<NotificationPayloadModel>>
 }

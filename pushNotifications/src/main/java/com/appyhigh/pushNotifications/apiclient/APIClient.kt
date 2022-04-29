@@ -19,7 +19,7 @@ class APIClient {
             val interceptor = HttpLoggingInterceptor()
             interceptor.level = HttpLoggingInterceptor.Level.BODY
             val client: OkHttpClient = OkHttpClient.Builder().addInterceptor(interceptor).build()
-            val BASE_URL = "https://pushx.apyhi.com/api/v0/"
+            val BASE_URL = "https://pushx.apyhi.com/api/v1/"
             return Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .client(client)

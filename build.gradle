@@ -19,6 +19,11 @@ allprojects {
         google()
         mavenCentral()
     }
+    ext {
+//        appSecretsProperties = new Properties()
+//        appSecretsPropertiesFile = rootProject.file("env.properties")
+//        appSecretsProperties.load(new FileInputStream(appSecretsPropertiesFile))
+    }
 }
 
 task clean(type: Delete) {
