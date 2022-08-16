@@ -18,18 +18,17 @@ import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.webkit.URLUtil
-import android.widget.ImageView
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.text.HtmlCompat
-import com.appyhigh.pushNotifications.utils.Constants.FCM_ICON
-import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_ACTIVITY
-import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_SERVICE
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
 import com.appyhigh.pushNotifications.utils.Constants
+import com.appyhigh.pushNotifications.utils.Constants.FCM_ICON
+import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_ACTIVITY
+import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_SERVICE
 import com.appyhigh.pushNotifications.utils.RSAKeyGenerator
 import com.appyhigh.pushNotifications.utils.Utils
 import com.bumptech.glide.Glide
@@ -38,8 +37,11 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.NotificationTarget
+import com.bumptech.glide.request.target.Target
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.InAppNotificationButtonListener
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.play.core.review.ReviewInfo
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.google.android.play.core.tasks.Task
@@ -58,9 +60,6 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
-import com.bumptech.glide.request.target.NotificationTarget
-import com.bumptech.glide.request.target.Target
-import com.google.android.material.snackbar.Snackbar
 
 
 class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificationButtonListener {
@@ -89,6 +88,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
     private lateinit var appName: String
     private var retrofit: Retrofit? = null
     private var apiInterface: APIInterface? = null
+    private val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+    } else{
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+    }
 
     constructor(context: Context, checkForNotificationPermission:Boolean = false, viewForSnackbar:View?=null) : this() {
         if(checkForNotificationPermission) {
@@ -138,6 +142,12 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             firebaseSubscribeToTopic(appName + "Debug")
         } else {
             firebaseSubscribeToTopic(appName)
+            try{
+                val info = context.packageManager.getPackageInfo(context.packageName, 0)
+                firebaseSubscribeToTopic(appName+info.versionName)
+            } catch (ex:Exception){
+                ex.printStackTrace()
+            }
             firebaseSubscribeToTopic(
                 appName + "-" + Locale.getDefault().getCountry() + "-" + Locale.getDefault()
                     .getLanguage()
@@ -418,7 +428,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context.applicationContext,
                 0 /* Request code */,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                flags
             )
             val preference = getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
             val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
@@ -515,13 +525,19 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
             launchIntent.action = System.currentTimeMillis().toString()
             launchIntent.putExtras(extras)
-            val pIntent = PendingIntent.getActivity(context, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT)
+            val pIntent = PendingIntent.getActivity(context, 0, launchIntent, flags)
             val shareIntent = Intent(context, PushTemplateReceiver::class.java)
             shareIntent.action = "SHARE_CLICK"
             shareIntent.putExtra("onSharePostClicked", true)
             shareIntent.putExtra("notificationId", a + 1)
             shareIntent.putExtras(extras)
-            val sharePendingIntent = PendingIntent.getBroadcast(context, Random().nextInt(), shareIntent, 0)
+            val shareFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else{
+                0
+            }
+            val sharePendingIntent = PendingIntent.getBroadcast(context, Random().nextInt(), shareIntent,
+                shareFlags)
             contentViewBig!!.setOnClickPendingIntent(R.id.shareIconLayout, sharePendingIntent)
             if(isDarkTheme()){
                 contentViewBig!!.setInt(R.id.share_icon, "setColorFilter", Color.WHITE)
@@ -671,11 +687,16 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             notificationIntent1.putExtra("clicked", 1)
             notificationIntent1.putExtra("notificationId", a + 1)
             notificationIntent1.putExtras(extras)
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else{
+                0
+            }
             val contentIntent1 = PendingIntent.getBroadcast(
                 context,
                 Random().nextInt(),
                 notificationIntent1,
-                0
+                flags
             )
             contentViewRating!!.setOnClickPendingIntent(R.id.star1, contentIntent1)
 
@@ -687,7 +708,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 Random().nextInt(),
                 notificationIntent2,
-                0
+                flags
             )
             contentViewRating!!.setOnClickPendingIntent(R.id.star2, contentIntent2)
 
@@ -699,7 +720,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 Random().nextInt(),
                 notificationIntent3,
-                0
+                flags
             )
             contentViewRating!!.setOnClickPendingIntent(R.id.star3, contentIntent3)
 
@@ -711,7 +732,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 Random().nextInt(),
                 notificationIntent4,
-                0
+                flags
             )
             contentViewRating!!.setOnClickPendingIntent(R.id.star4, contentIntent4)
 
@@ -723,7 +744,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 Random().nextInt(),
                 notificationIntent5,
-                0
+                flags
             )
             contentViewRating!!.setOnClickPendingIntent(R.id.star5, contentIntent5)
 
@@ -800,7 +821,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 0,
                 launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                flags
             )
             bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
@@ -907,7 +928,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 0,
                 launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                flags
             )
             bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
@@ -1003,11 +1024,12 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             launchIntent.putExtras(extras)
             launchIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
             launchIntent.action = java.lang.Long.toString(System.currentTimeMillis())
+
             val pIntent = PendingIntent.getActivity(
                 context,
                 0,
                 launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                flags
             )
 //            setCustomContentViewBigImage(contentViewRating, image);
             bitmapImage = getBitmapFromUrl(image)
@@ -1103,7 +1125,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 0,
                 launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                flags
             )
 //            setCustomContentViewBigImage(contentViewRating, image);
             bitmapImage = getBitmapFromUrl(image)
@@ -1195,7 +1217,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 context,
                 0,
                 launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                flags
             )
             bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
@@ -1477,7 +1499,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                     context!!.applicationContext,
                     0 /* Request code */,
                     intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_ONE_SHOT
+                    flags
                 )
                 val defaultSoundUri =
                     RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -1827,9 +1849,14 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
         launchIntent.putExtras(extras)
         launchIntent.flags =
             Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else{
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
         return PendingIntent.getBroadcast(
             context, System.currentTimeMillis().toInt(),
-            launchIntent, PendingIntent.FLAG_UPDATE_CURRENT
+            launchIntent, flags
         )
     }
 
