@@ -2,10 +2,11 @@
 
        | SDK Name                  | Lib Version  |
        |---------------------------|--------------|
-       | push-notification-utils   |    1.3.3     |
+       | push-notification-utils   |    1.3.4     |
 
 1. Fixed UI design issue for devices > android 12 for appname and icon.
 2. Fixed user agent issue in glide.
+3. Fixed ANR for loading bitmap by adding co routines.
 
 ----------------------------------------------------------------------------------------------------------------------------
 

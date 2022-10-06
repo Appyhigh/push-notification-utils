@@ -61,11 +61,14 @@ dependencies {
     implementation "com.squareup.picasso:picasso:2.71828"
 
     //jwt token
-    api 'io.jsonwebtoken:jjwt-api:0.11.2'
-    implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
-    implementation('io.jsonwebtoken:jjwt-orgjson:0.11.2') {
+    api 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation('io.jsonwebtoken:jjwt-orgjson:0.11.5') {
         exclude group: 'org.json', module: 'json' //provided by Android natively
     }
+
+    // co-routines
+    implementation "androidx.work:work-runtime-ktx:2.7.1"
 
 }
 

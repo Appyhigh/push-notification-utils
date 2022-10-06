@@ -25,6 +25,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.text.HtmlCompat
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
+import com.appyhigh.pushNotifications.models.BitmapLoadListener
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
 import com.appyhigh.pushNotifications.utils.Constants
 import com.appyhigh.pushNotifications.utils.Constants.FCM_ICON
@@ -52,6 +53,10 @@ import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.squareup.picasso.Picasso
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -65,7 +70,6 @@ import java.util.*
 
 class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificationButtonListener {
 
-    var bitmap: Bitmap? = null
     private var title: String? = null
     private var message: String? = null
     private var messageBody: String? = null
@@ -111,7 +115,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                     // the user re-enable notifications for this application again.
                     val snackbar: Snackbar = Snackbar.make(viewForSnackbar!!, "You need to enable notifications for this app", Snackbar.LENGTH_LONG)
                         .setAction("ENABLE", View.OnClickListener { // Links to this app's notification settings
-                            openNotificationSettingsForApp()
+                            openNotificationSettingsForApp(context)
                         })
                     snackbar.show()
                     return
@@ -122,15 +126,15 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
         }
     }
 
-    private fun openNotificationSettingsForApp() {
+    private fun openNotificationSettingsForApp(context: Context) {
         // Links to this app's notification settings.
         val intent = Intent()
         intent.action = "android.settings.APP_NOTIFICATION_SETTINGS"
-        intent.putExtra("app_package", packageName)
-        intent.putExtra("app_uid", applicationInfo.uid)
+        intent.putExtra("app_package", context.packageName)
+        intent.putExtra("app_uid", context.applicationInfo.uid)
         // for Android 8 and above
-        intent.putExtra("android.provider.extra.APP_PACKAGE", packageName)
-        startActivity(intent)
+        intent.putExtra("android.provider.extra.APP_PACKAGE", context.packageName)
+        context.startActivity(intent)
     }
 
     fun addTopics(context: Context, appName: String, isDebug: Boolean) {
@@ -295,82 +299,93 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                             val message = extras.getString("message") ?: extras.getString("nm")
                             if (message != null) {
                                 if (message != "") {
-                                    when (notificationType) {
-                                        "N" -> {
-                                            setUp(this, extras)
-                                            sendNativeNotification(this, extras)
+                                    image = extras.getString("image")
+                                    getBitmapFromUrl(image, object : BitmapLoadListener{
+                                        override fun onSuccess(bitmap: Bitmap?) {
+                                            try{
+                                                bitmapImage = bitmap
+                                                when (notificationType) {
+                                                    "N" -> {
+                                                        sendNativeNotification(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                    "R" -> {
+                                                        renderRatingNotification(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                    "Z" -> {
+                                                        renderZeroBezelNotification(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                    "O" -> {
+                                                        renderOneBezelNotification(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                    "A" -> {
+                                                        startService(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                    "imageWithHeading" -> {
+                                                        imageWithHeading(this@MyFirebaseMessagingService,extras)
+                                                    }
+                                                    "imageWithSubHeading" -> {
+                                                        imageWithSubHeading(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                    "smallTextImageCard" -> {
+                                                        setSmallTextImageCard(this@MyFirebaseMessagingService,extras)
+                                                    }
+                                                    else -> {
+                                                        sendNotification(this@MyFirebaseMessagingService, extras)
+                                                    }
+                                                }
+                                            } catch (ex:Exception){
+                                                ex.printStackTrace()
+                                            }
                                         }
-                                        "R" -> {
-                                            setUp(this, extras)
-                                            renderRatingNotification(this, extras)
-                                        }
-                                        "Z" -> {
-                                            setUp(this, extras)
-                                            renderZeroBezelNotification(this, extras)
-                                        }
-                                        "O" -> {
-                                            setUp(this, extras)
-                                            renderOneBezelNotification(this, extras)
-                                        }
-                                        "A" -> {
-                                            startService(this, extras)
-                                        }
-                                        "imageWithHeading" -> {
-                                            setUp(this,extras)
-                                            imageWithHeading(this,extras)
-                                        }
-                                        "imageWithSubHeading" -> {
-                                            setUp(this,extras)
-                                            imageWithSubHeading(this, extras)
-                                        }
-                                        "smallTextImageCard" -> {
-                                            setUp(this,extras)
-                                            setSmallTextImageCard(this,extras)
-                                        }
-                                        else -> {
-                                            sendNotification(this, extras)
-                                        }
-                                    }
+                                    })
                                 } else {
-                                    CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(
-                                        extras
-                                    )
+                                    CleverTapAPI.getDefaultInstance(this)!!.pushNotificationViewedEvent(extras)
                                 }
                             }
                         }
                     } else {
                         setUp(this, extras)
-                        when (notificationType) {
-                            "N" -> {
-                                Log.d(TAG, "onMessageReceived: in native part")
-                                sendNativeNotification(this, extras)
+                        image = extras.getString("image")
+                        getBitmapFromUrl(image, object : BitmapLoadListener{
+                            override fun onSuccess(bitmap: Bitmap?) {
+                                try{
+                                    bitmapImage = bitmap
+                                    when (notificationType) {
+                                        "N" -> {
+                                            Log.d(TAG, "onMessageReceived: in native part")
+                                            sendNativeNotification(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "R" -> {
+                                            renderRatingNotification(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "Z" -> {
+                                            renderZeroBezelNotification(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "O" -> {
+                                            renderOneBezelNotification(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "A" -> {
+                                            startService(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "imageWithHeading" -> {
+                                            imageWithHeading(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "imageWithSubHeading" -> {
+                                            imageWithSubHeading(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        "smallTextImageCard" -> {
+                                            setSmallTextImageCard(this@MyFirebaseMessagingService, extras)
+                                        }
+                                        else -> {
+                                            Log.d(TAG, "onMessageReceived: in else part")
+                                            sendNotification(this@MyFirebaseMessagingService, extras)
+                                        }
+                                    }
+                                } catch (ex:Exception){
+                                    ex.printStackTrace()
+                                }
                             }
-                            "R" -> {
-                                renderRatingNotification(this, extras)
-                            }
-                            "Z" -> {
-                                renderZeroBezelNotification(this, extras)
-                            }
-                            "O" -> {
-                                renderOneBezelNotification(this, extras)
-                            }
-                            "A" -> {
-                                startService(this, extras)
-                            }
-                            "imageWithHeading" -> {
-                                imageWithHeading(this,extras)
-                            }
-                            "imageWithSubHeading" -> {
-                                imageWithSubHeading(this, extras)
-                            }
-                            "smallTextImageCard" -> {
-                                setSmallTextImageCard(this,extras)
-                            }
-                            else -> {
-                                Log.d(TAG, "onMessageReceived: in else part")
-                                sendNotification(this, extras)
-                            }
-                        }
+                        })
                     }
                 }
 
@@ -398,7 +413,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
         try {
             var message = extras.getString("message")
                 ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
-            val image = getBitmapFromUrl(extras.getString("image"))
             val url = extras.getString("link")
             var which = extras.getString("which")
             var title = extras.getString("title")
@@ -431,12 +445,12 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 intent,
                 flags
             )
-            val preference = getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
+            val preference = context.getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
             val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             if (title != null && message != null) {
                 val notificationBuilder: NotificationCompat.Builder
-                if (image == null || image.equals("")) {
+                if (bitmapImage == null) {
                     notificationBuilder = NotificationCompat.Builder(context.applicationContext)
                         .setSmallIcon(FCM_ICON)
                         .setContentTitle(title)
@@ -460,13 +474,13 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                     }
                 } else {
                     notificationBuilder = NotificationCompat.Builder(context.applicationContext)
-                        .setLargeIcon(image) /*Notification icon image*/
+                        .setLargeIcon(bitmapImage) /*Notification icon image*/
                         .setSmallIcon(FCM_ICON)
                         .setContentTitle(title)
                         .setContentText(message)
                         .setStyle(
                             NotificationCompat.BigPictureStyle()
-                                .bigPicture(image)
+                                .bigPicture(bitmapImage)
                         ) /*Notification with Image*/
                         .setAutoCancel(true)
                         .setSound(defaultSoundUri)
@@ -497,7 +511,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                         notificationBuilder.build()
                     )
                 }
-                CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+                CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -548,7 +562,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             if(isDarkTheme()){
                 contentViewBig!!.setInt(R.id.share_icon, "setColorFilter", Color.WHITE)
             }
-            if(image.isNullOrEmpty()){
+            if(bitmapImage == null){
                 contentViewSmall!!.setViewVisibility(R.id.big_image, View.GONE)
                 contentViewBig!!.setViewVisibility(R.id.imageLayout, View.GONE)
             }
@@ -556,7 +570,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             //added a check for address notification
             if(notificationFrom != "MY_ADDRESS") {
                 try{
-                    bitmapImage = getBitmapFromUrl(image)
                     if (bitmapImage != null) {
                         contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                         contentViewSmall!!.setImageViewBitmap(R.id.big_image, bitmapImage)
@@ -577,7 +590,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             val id = "messenger_general"
             val name = "General"
             val description = "General Notifications sent by the app"
-            val preference = getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
+            val preference = context.getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
             val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
             val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val notificationBuilder = NotificationCompat.Builder(this, id)
@@ -645,6 +658,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
             Log.d(TAG, "sendNativeNotification: ")
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
         } catch (ex:java.lang.Exception){
             ex.printStackTrace()
         }
@@ -652,9 +666,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
 
     private fun renderRatingNotification(context: Context, extras: Bundle) {
         try {
-            contentViewRating = RemoteViews(packageName, R.layout.notification)
+            contentViewRating = RemoteViews(context.packageName, R.layout.notification)
             setCustomContentViewBasicKeys(contentViewRating!!, context)
-            contentViewSmall = RemoteViews(packageName, R.layout.content_view_small)
+            contentViewSmall = RemoteViews(context.packageName, R.layout.content_view_small)
             setCustomContentViewBasicKeys(contentViewSmall!!, context)
             setCustomContentViewTitle(contentViewRating!!, title)
             setCustomContentViewTitle(contentViewSmall!!, title)
@@ -677,7 +691,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
 
 
 //            setCustomContentViewBigImage(contentViewRating, image);
-            bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
                 contentViewRating!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                 //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
@@ -791,7 +804,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             } else {
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
-            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             Log.d(TAG, "renderRatingNotification: ")
 
 //            Utils.raiseNotificationViewed(context, extras, config);
@@ -836,7 +849,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 launchIntent,
                 flags
             )
-            bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
                 contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
 
@@ -891,7 +903,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             } else {
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
-            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             Log.d(TAG, "renderZeroBezelNotification: ")
         } catch (t: Throwable) {
             Log.d(TAG, "renderZeroBezelNotification: $t")
@@ -948,7 +960,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 launchIntent,
                 flags
             )
-            bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
                 contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                 contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
@@ -1003,7 +1014,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             } else {
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
-            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             Log.d(TAG, "imageWithHeading: ")
         } catch (t: Throwable) {
             Log.d(TAG, "imageWithHeading: $t")
@@ -1012,10 +1023,10 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
 
     private fun imageWithSubHeading( context: Context, extras: Bundle){
         try {
-            contentViewBig = RemoteViews(packageName, R.layout.image_wt_sub_heading)
+            contentViewBig = RemoteViews(context.packageName, R.layout.image_wt_sub_heading)
 //            setCustomContentViewBasicKeys(contentViewRating!!, context)
 
-            contentViewSmall = RemoteViews(packageName, R.layout.image_wt_heading_small)
+            contentViewSmall = RemoteViews(context.packageName, R.layout.image_wt_heading_small)
 //            setCustomAppContentSmall(contentViewSmall!!, context)
             contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
 
@@ -1055,7 +1066,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 flags
             )
 //            setCustomContentViewBigImage(contentViewRating, image);
-            bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
                 contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                 //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
@@ -1112,7 +1122,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             } else {
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
-            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             Log.d(TAG, "imageWithSubHeading: ")
 //            Utils.raiseNotificationViewed(context, extras, config);
         } catch (t: Throwable) {
@@ -1123,7 +1133,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
     private fun setSmallTextImageCard(context: Context, extras: Bundle){
         try {
 
-            contentViewSmall = RemoteViews(packageName, R.layout.image_wt_heading_small)
+            contentViewSmall = RemoteViews(context.packageName, R.layout.image_wt_heading_small)
 //            setCustomAppContentSmall(contentViewSmall!!, context)
             contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
 
@@ -1155,7 +1165,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 flags
             )
 //            setCustomContentViewBigImage(contentViewRating, image);
-            bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
                 //            setCustomContentViewLargeIcon(contentViewSmall, large_icon);
                 contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
@@ -1206,7 +1215,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             } else {
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
-            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             Log.d(TAG, "setSmallTextImageCard: ")
 //            Utils.raiseNotificationViewed(context, extras, config);
         } catch (t: Throwable) {
@@ -1248,7 +1257,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 launchIntent,
                 flags
             )
-            bitmapImage = getBitmapFromUrl(image)
             if (bitmapImage != null) {
                 contentViewBig!!.setImageViewBitmap(R.id.big_image, bitmapImage)
                 contentViewSmall!!.setImageViewBitmap(R.id.large_icon, bitmapImage)
@@ -1303,7 +1311,7 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             } else {
                 notificationManager?.notify(a + 1, notificationBuilder.build())
             }
-            CleverTapAPI.getDefaultInstance(applicationContext)?.pushNotificationViewedEvent(extras)
+            CleverTapAPI.getDefaultInstance(context)?.pushNotificationViewedEvent(extras)
             Log.d(TAG, "renderOneBezelNotification: ")
         } catch (t: Throwable) {
             Log.d(TAG, "renderOneBezelNotification: $t")
@@ -1317,10 +1325,10 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     }
 
-    fun isValidUrl(urlString: String?): Boolean {
+    private fun isValidUrl(urlString: String?): Boolean {
         try {
-            val url = URL(urlString)
-            return URLUtil.isValidUrl(urlString) && Patterns.WEB_URL.matcher(urlString).matches()
+            return !urlString.isNullOrEmpty() && URLUtil.isValidUrl(urlString)
+                    && Patterns.WEB_URL.matcher(urlString).matches()
         } catch (ignored: MalformedURLException) {
         }
         return false
@@ -1330,24 +1338,31 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
     /*
      *To get a Bitmap image from the URL received
      * */
-    private fun getBitmapFromUrl(imageUrl: String?): Bitmap? {
-        var bitmap: Bitmap? = null
-        if (image == null || image.equals("") || !isValidUrl(imageUrl)) {
-            return bitmap
-        }
-        return try {
-            val url = URL(imageUrl)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.doInput = true
-            connection.connect()
-            val input = connection.inputStream
-            bitmap = BitmapFactory.decodeStream(input)
-            bitmap
-        } catch (e: Exception) {
-            Log.d(TAG, "getBitmapFromUrl: $e")
-            bitmap
+    private fun getBitmapFromUrl(imageUrl: String?, listener: BitmapLoadListener) {
+        if (!isValidUrl(imageUrl)) {
+            listener.onSuccess(null)
+        } else{
+            CoroutineScope(Dispatchers.Default).launch {
+                var bitmap: Bitmap? = null
+                try {
+                    val url = URL(imageUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.doInput = true
+                    connection.connect()
+                    val input = connection.inputStream
+                    bitmap = BitmapFactory.decodeStream(input)
+                } catch (e: Exception) {
+                    Log.d(TAG, "getBitmapFromUrl: $e")
+                }
+                launch(Dispatchers.Default){
+                    withContext(Dispatchers.Main){
+                        listener.onSuccess(bitmap)
+                    }
+                }
+            }
         }
     }
+
 
 
     fun fetchNotifications(context: Context) {
@@ -1428,24 +1443,47 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                     }
                     setUp(context, extras)
                     Handler(Looper.getMainLooper()).postDelayed({
-                        when (extras.getString("notificationType", "")) {
-                            "N" -> {
-                                sendNativeNotification(context, extras)
+                        image = extras.getString("image")
+                        getBitmapFromUrl(image, object : BitmapLoadListener{
+                            override fun onSuccess(bitmap: Bitmap?) {
+                                try{
+                                    bitmapImage = bitmap
+                                    when (extras.getString("notificationType", "")) {
+                                        "N" -> {
+                                            Log.d(TAG, "onMessageReceived: in native part")
+                                            sendNativeNotification(context, extras)
+                                        }
+                                        "R" -> {
+                                            renderRatingNotification(context, extras)
+                                        }
+                                        "Z" -> {
+                                            renderZeroBezelNotification(context, extras)
+                                        }
+                                        "O" -> {
+                                            renderOneBezelNotification(context, extras)
+                                        }
+                                        "A" -> {
+                                            startService(context, extras)
+                                        }
+                                        "imageWithHeading" -> {
+                                            imageWithHeading(context, extras)
+                                        }
+                                        "imageWithSubHeading" -> {
+                                            imageWithSubHeading(context, extras)
+                                        }
+                                        "smallTextImageCard" -> {
+                                            setSmallTextImageCard(context, extras)
+                                        }
+                                        else -> {
+                                            Log.d(TAG, "onMessageReceived: in else part")
+                                            sendNotification(context, extras)
+                                        }
+                                    }
+                                } catch (ex:Exception){
+                                    ex.printStackTrace()
+                                }
                             }
-                            "R" -> {
-                                renderRatingNotification(context, extras)
-                            }
-                            "Z" -> {
-                                renderZeroBezelNotification(context, extras)
-                            }
-                            "O" -> {
-                                renderOneBezelNotification(context, extras)
-                            }
-                            else -> {
-                                Log.d(TAG, "onMessageReceived: in else part")
-                                generatePictureStyleNotification(context, extras).execute()
-                            }
-                        }
+                        })
                     }, 1000)
                     //added for time stamp
                     val format: Long = System.currentTimeMillis()
@@ -1461,139 +1499,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
         } catch (e: Exception) {
             Log.d(TAG, "setNotificationData: catch " + e.message)
             e.printStackTrace()
-        }
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    inner class generatePictureStyleNotification(context: Context, extras: Bundle) :
-        AsyncTask<Void, Void, Bitmap?>() {
-        private var context: Context? = null
-        private var extras: Bundle? = null
-
-        init {
-            this.context = context
-            this.extras = extras
-        }
-
-        override fun doInBackground(vararg params: Void?): Bitmap? {
-            var bitmap: Bitmap? = null
-            val imageUrl = extras!!.getString("image")
-            if (imageUrl == null || imageUrl.equals("") || !isValidUrl(imageUrl)) {
-                return bitmap
-            }
-            try {
-                val url = URL(imageUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.doInput = true
-                connection.connect()
-                val input = connection.inputStream
-                bitmap = BitmapFactory.decodeStream(input)
-                return bitmap
-            } catch (e: Exception) {
-                Log.d(TAG, "getBitmapfromUrl: $e")
-                return bitmap
-            }
-        }
-
-        override fun onPostExecute(bitmap: Bitmap?) {
-            super.onPostExecute(bitmap)
-            try {
-                var message = extras!!.getString("message")
-                    ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
-                var url = extras!!.getString("link")
-                var which = extras!!.getString("which")
-                var title = extras!!.getString("title")
-                    ?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString() }
-                if (message == null || message.equals("")) {
-                    message = extras!!.getString("nm")?.let {
-                        HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
-                    }
-                }
-                if (title == null || title.equals("")) {
-                    title = extras!!.getString("nt")?.let {
-                        HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
-                    }
-                }
-                onMessageReceivedListener?.onMessageReceived(extras!!)
-                Log.i("Result", "Got the data yessss")
-                val rand = Random()
-                val a = rand.nextInt(101) + 1
-                val intent = Intent(context!!.applicationContext, FCM_TARGET_ACTIVITY)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                intent.putExtra("link", url)
-                intent.putExtras(extras!!);
-                intent.action = java.lang.Long.toString(System.currentTimeMillis())
-                val pendingIntent = PendingIntent.getActivity(
-                    context!!.applicationContext,
-                    0 /* Request code */,
-                    intent,
-                    flags
-                )
-                val defaultSoundUri =
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                if (title != null && message != null) {
-                    var notificationBuilder: NotificationCompat.Builder;
-                    if (bitmap == null) {
-                        notificationBuilder =
-                            NotificationCompat.Builder(context!!.applicationContext)
-                                .setSmallIcon(FCM_ICON)
-                                .setContentTitle(title)
-                                .setContentText(message)
-                                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-                                .setAutoCancel(true)
-                                .setSound(defaultSoundUri)
-                                .setContentIntent(pendingIntent)
-                                .setPriority(Notification.PRIORITY_DEFAULT)
-                    } else {
-                        notificationBuilder =
-                            NotificationCompat.Builder(context!!.applicationContext)
-                                .setLargeIcon(bitmap) /*Notification icon image*/
-                                .setSmallIcon(FCM_ICON)
-                                .setContentTitle(title)
-                                .setContentText(message)
-                                .setStyle(
-                                    NotificationCompat.BigPictureStyle()
-                                        .bigPicture(bitmap)
-                                ) /*Notification with Image*/
-                                .setAutoCancel(true)
-                                .setSound(defaultSoundUri)
-                                .setContentIntent(pendingIntent)
-                                .setPriority(Notification.PRIORITY_DEFAULT)
-                    }
-                    val preference = context!!.getSharedPreferences(Constants.PUSH_LIB_PREFS, MODE_PRIVATE)
-                    val isGrouping = preference.getBoolean(Constants.ENABLE_NOTIFICATION_GROUPING, true)
-                    if(isGrouping){
-                        notificationBuilder.setGroup("pushLib"+a+1).setGroupSummary(true)
-                    }
-                    val notificationManager =
-                        context!!.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        // The id of the channel.
-                        val id = "messenger_general"
-                        val name: CharSequence = "General"
-                        val description = "General Notifications sent by the app"
-                        val importance = NotificationManager.IMPORTANCE_HIGH
-                        val mChannel = NotificationChannel(id, name, importance)
-                        mChannel.description = description
-                        mChannel.enableLights(true)
-                        mChannel.lightColor = Color.BLUE
-                        mChannel.enableVibration(true)
-                        notificationManager.createNotificationChannel(mChannel)
-                        notificationManager.notify(
-                            a + 1,
-                            notificationBuilder.setChannelId(id).build()
-                        )
-                    } else {
-                        notificationManager.notify(
-                            a + 1 /* ID of notification */,
-                            notificationBuilder.build()
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 
@@ -1751,29 +1656,6 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             inAppIntentParam
         )
     }
-
-//    override fun messageClicked(inAppMessage: InAppMessage, action: Action) {
-//        // Determine which URL the user clicked
-//        val url = action.actionUrl
-//        val activity1 = inAppContext as Activity
-//        (inAppContext as Activity).finish()
-//        inAppContext.startActivity(activity1.intent)
-//
-//        val dataBundle: Map<String, String>? = inAppMessage.data
-//        Log.d(TAG, "messageClicked: " + dataBundle.toString())
-//        val extras = Bundle()
-//        for ((key, value) in dataBundle!!.entries) {
-//            extras.putString(key, value)
-//        }
-//
-//        checkForInAppNotifications(
-//            inAppContext,
-//            extras,
-//            inAppWebViewActivityToOpen,
-//            inAppActivityToOpen,
-//            inAppIntentParam
-//        )
-//    }
 
 
     fun setListener(
