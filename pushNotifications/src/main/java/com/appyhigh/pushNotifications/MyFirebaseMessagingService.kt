@@ -18,6 +18,7 @@ import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.webkit.URLUtil
+import android.webkit.WebSettings
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -517,6 +518,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             setCustomContentViewTitle(contentViewSmall!!, title)
             setCustomContentViewTitleColour(contentViewBig!!, title_clr)
             setCustomContentViewTitleColour(contentViewSmall!!, title_clr)
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.R){
+                contentViewSmall!!.setViewVisibility(R.id.llApp, View.GONE)
+            } else{
+                contentViewSmall!!.setViewVisibility(R.id.llApp, View.VISIBLE)
+            }
             val notificationFrom = extras.getString("notificationFrom")
             if(notificationFrom != null && notificationFrom == "MY_ADDRESS"){
                 extras.putString("addressNotification","true")
@@ -586,7 +592,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
 
             if(useGlide){
                 try{
-                    val glideImage = GlideUrl(image, LazyHeaders.Builder().addHeader("User-Agent", "5").build())
+                    val glideImage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                        GlideUrl(image, LazyHeaders.Builder().addHeader("User-Agent", WebSettings.getDefaultUserAgent(context)).build())
+                    } else {
+                        GlideUrl(image, LazyHeaders.Builder().addHeader("User-Agent", "Mozilla/5.0(Linux;Android12;RMX2161Build/SP1A.210812.016;wv)AppleWebKit/537.36(KHTML,likeGecko)Version/4.0Chrome/104.0.5112.97MobileSafari/537.36").build())
+                    }
                     val expandedNotificationTarget = NotificationTarget(context, R.id.big_image, contentViewBig, notificationBuilder.build(),(a+1))
                     Glide.with(this)
                         .asBitmap()
@@ -796,7 +806,10 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             setCustomContentViewBasicKeys(contentViewBig!!, context)
             contentViewSmall = RemoteViews(context.packageName, R.layout.cv_small_zero_bezel)
 
-
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.R){
+                contentViewSmall!!.setViewVisibility(R.id.metadata, View.GONE)
+                contentViewBig!!.setViewVisibility(R.id.metadata, View.GONE)
+            }
             setCustomContentViewBasicKeys(contentViewSmall!!, context)
             setCustomContentViewTitle(contentViewBig!!, title)
             setCustomContentViewTitle(contentViewSmall!!, title)
@@ -897,6 +910,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             }
             contentViewSmall = RemoteViews(context.packageName, R.layout.image_wt_heading_small)
             contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.R){
+                contentViewSmall!!.setViewVisibility(R.id.small_icon, View.GONE)
+                contentViewSmall!!.setViewVisibility(R.id.app_name, View.GONE)
+                contentViewBig!!.setViewVisibility(R.id.rlApp, View.GONE)
+            }
 
             if (meta_clr != null && !meta_clr!!.isEmpty()) {
                 contentViewSmall!!.setTextColor(
@@ -1008,6 +1026,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 )
             }
 
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.R){
+                contentViewSmall!!.setViewVisibility(R.id.small_icon, View.GONE)
+                contentViewSmall!!.setViewVisibility(R.id.app_name, View.GONE)
+                contentViewBig!!.setViewVisibility(R.id.heading_layout, View.GONE)
+            }
             setCustomContentViewTitle(contentViewBig!!, title)
             setCustomContentViewTitle(contentViewSmall!!, title)
             setCustomContentViewMessage(contentViewBig!!, message)
@@ -1104,6 +1127,10 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
 //            setCustomAppContentSmall(contentViewSmall!!, context)
             contentViewSmall!!.setTextViewText(R.id.app_name, Utils.getApplicationName(context))
 
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.R){
+                contentViewSmall!!.setViewVisibility(R.id.small_icon, View.GONE)
+                contentViewSmall!!.setViewVisibility(R.id.app_name, View.GONE)
+            }
             if (meta_clr != null && !meta_clr!!.isEmpty()) {
                 contentViewSmall!!.setTextColor(
                     R.id.app_name,
@@ -1193,7 +1220,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
             contentViewBig = RemoteViews(context.packageName, R.layout.one_bezel)
             setCustomContentViewBasicKeys(contentViewBig!!, context)
             contentViewSmall = RemoteViews(context.packageName, R.layout.cv_small_one_bezel)
-
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.R){
+                contentViewSmall!!.setViewVisibility(R.id.rlApp, View.GONE)
+            }
             setCustomContentViewBasicKeys(contentViewSmall!!, context)
             setCustomContentViewTitle(contentViewBig!!, title)
             setCustomContentViewTitle(contentViewSmall!!, title)

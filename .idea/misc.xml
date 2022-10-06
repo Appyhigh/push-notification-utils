@@ -9,7 +9,11 @@
         <entry key="pushNotifications/src/main/res/layout/cv_big_native.xml" value="0.335" />
         <entry key="pushNotifications/src/main/res/layout/cv_small_native.xml" value="0.335" />
         <entry key="pushNotifications/src/main/res/layout/cv_small_one_bezel.xml" value="0.16979166666666667" />
+        <entry key="pushNotifications/src/main/res/layout/cv_small_text_only.xml" value="0.12968591691995948" />
         <entry key="pushNotifications/src/main/res/layout/cv_small_zero_bezel.xml" value="0.16979166666666667" />
+        <entry key="pushNotifications/src/main/res/layout/image_wt_heading.xml" value="0.12968591691995948" />
+        <entry key="pushNotifications/src/main/res/layout/image_wt_heading_small.xml" value="0.12968591691995948" />
+        <entry key="pushNotifications/src/main/res/layout/image_wt_sub_heading.xml" value="0.12968591691995948" />
         <entry key="pushNotifications/src/main/res/layout/metadata.xml" value="0.16979166666666667" />
         <entry key="pushNotifications/src/main/res/layout/notification.xml" value="0.16145833333333334" />
         <entry key="pushNotifications/src/main/res/layout/one_bezel.xml" value="0.16979166666666667" />
