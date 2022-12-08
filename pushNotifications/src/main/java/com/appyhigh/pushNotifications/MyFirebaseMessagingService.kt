@@ -22,12 +22,14 @@ import android.webkit.WebSettings
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import com.appyhigh.pushNotifications.apiclient.APIClient
 import com.appyhigh.pushNotifications.apiclient.APIInterface
 import com.appyhigh.pushNotifications.models.BitmapLoadListener
 import com.appyhigh.pushNotifications.models.NotificationPayloadModel
 import com.appyhigh.pushNotifications.utils.Constants
+import com.appyhigh.pushNotifications.utils.Constants.FCM_COLOR
 import com.appyhigh.pushNotifications.utils.Constants.FCM_ICON
 import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_ACTIVITY
 import com.appyhigh.pushNotifications.utils.Constants.FCM_TARGET_SERVICE
@@ -260,6 +262,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                             Log.d(TAG, "onMessageReceived: " + metaData.get("FCM_ICON"))
                             FCM_ICON = metaData.getInt("FCM_ICON")
                         }
+                        try{
+                            if(metaData.containsKey("FCM_COLOR")){
+                                FCM_COLOR = metaData.getInt("FCM_COLOR")
+                            }
+                        } catch (ex:Exception){}
                         //getting and setting the target activity that is to be opened on notification click
                         if (extras.containsKey("target_activity")) {
                             FCM_TARGET_ACTIVITY = Class.forName(
@@ -487,6 +494,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                         .setContentIntent(pendingIntent)
                         .setPriority(Notification.PRIORITY_DEFAULT)
                 }
+                if(FCM_COLOR != 0){
+                    notificationBuilder.color = FCM_COLOR
+                }
                 if(isGrouping){
                     notificationBuilder.setGroup("pushLib"+a+1).setGroupSummary(true)
                 }
@@ -602,6 +612,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setSound(defaultSoundUri)
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
 
             if(useGlide){
                 try{
@@ -788,6 +801,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setSound(defaultSoundUri)
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
@@ -888,7 +904,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setSound(defaultSoundUri)
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
-
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
                 val mChannel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
@@ -1000,6 +1018,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
 
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
                 val mChannel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
@@ -1106,6 +1127,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setSound(defaultSoundUri)
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
@@ -1199,6 +1223,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setSound(defaultSoundUri)
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
@@ -1296,6 +1323,9 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                 .setSound(defaultSoundUri)
                 .setContentIntent(pIntent)
                 .setPriority(Notification.PRIORITY_DEFAULT)
+            if(FCM_COLOR != 0){
+                notificationBuilder.color = FCM_COLOR
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // The id of the channel.
@@ -1427,6 +1457,11 @@ class MyFirebaseMessagingService() : FirebaseMessagingService(), InAppNotificati
                             Log.d(TAG, "FCM_ICON: " + metaData.get("FCM_ICON"))
                             FCM_ICON = metaData.getInt("FCM_ICON")
                         }
+                        try{
+                            if(metaData.containsKey("FCM_COLOR")){
+                                FCM_COLOR = metaData.getInt("FCM_COLOR")
+                            }
+                        } catch (ex:Exception){}
                         //getting and setting the target activity that is to be opened on notification click
                         if (extras.containsKey("target_activity")) {
                             FCM_TARGET_ACTIVITY = Class.forName(

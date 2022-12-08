@@ -28,8 +28,8 @@ allprojects {
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
 implementation 'com.clevertap.android:clevertap-android-sdk:4.6.0'(#Recommended latest version)
-implementation 'com.google.firebase:firebase-messaging:23.0.7'
-implementation 'com.github.Appyhigh:appyhigh-utils:1.3.4'
+implementation 'com.google.firebase:firebase-messaging:23.0.7'(#Recommended latest version)
+implementation 'com.github.Appyhigh:push-notification-utils:1.3.5'
 ```
 **Note:** Even though you are not using cleverTap, you must include the cleverTap library
 
@@ -74,16 +74,22 @@ implementation 'com.github.Appyhigh:appyhigh-utils:1.3.4'
 <meta-data android:name="FCM_TARGET_SERVICE" android:value="**your_target_service with package name**" />
 <meta-data android:name="FCM_TARGET_ACTIVITY" android:value="**your_target_activity with package name**" />
 <meta-data android:name="FCM_ICON" android:resource="**your_app_icon**" />
+
+<!--Add this only if needed-->
+<meta-data android:name="FCM_COLOR" android:resource="**color_reference_from_colors.xml**" /> 
 ```
 
 FCM_TARGET_ACTIVITY - default activity that should be opened when notification is clicked.
 
-FCM_ICON - notification icon that needs be displayed in the push notification
+FCM_ICON - notification icon that needs be displayed in the push notification.
+
+FCM_COLOR - background color that needs to be used in notification.
 
 ### Example
 ```xml
 <meta-data android:name="FCM_TARGET_ACTIVITY" android:value="messenger.chat.social.messenger.activities.MatchingActivity" />
 <meta-data android:name="FCM_ICON" android:resource="@drawable/launcher" />
+<meta-data android:name="FCM_COLOR" android:resource="@color/temp_color" />
 ```
 
 
@@ -426,7 +432,7 @@ allprojects {
 ```
 2.To import this library, Add the following line to your app level *build.gradle* file.
 ```groovy
-implementation implementation 'com.github.Appyhigh:appyhigh-utils:1.3.4'
+implementation implementation 'com.github.Appyhigh:push-notification-utils:1.3.5'
 
 ```
 
